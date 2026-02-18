@@ -1,9 +1,12 @@
-import { View, Text, SafeAreaView, TouchableOpacity, Image } from "react-native";
 import { Link, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
+import { Image, SafeAreaView, Text, TouchableOpacity, View } from "react-native";
 
 export default function ReceiverLoginScreen() {
     const router = useRouter();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
 
     const handleGoogleLogin = () => {
         // Mock Google login — navigate to receiver home
@@ -13,7 +16,7 @@ export default function ReceiverLoginScreen() {
     return (
         <SafeAreaView className="flex-1 bg-background">
             <View className="flex-1 items-center justify-center p-4">
-                <View className="w-full max-w-md flex-col gap-8 rounded-3xl bg-muted px-6 py-10">
+                <View className="w-full max-w-md flex-col gap-3 rounded-3xl bg-muted px-6 py-4">
                     {/* Back button */}
                     <TouchableOpacity
                         onPress={() => router.back()}
@@ -24,10 +27,12 @@ export default function ReceiverLoginScreen() {
                     </TouchableOpacity>
 
                     {/* Logo */}
-                    <View className="items-center gap-3">
-                        <Text className="text-3xl font-extrabold tracking-tight text-foreground italic lowercase">
-                            wura<Text className="text-[#F59E0B]">.</Text>
-                        </Text>
+                    <View className="items-center gap-1">
+                        <Image
+                            source={isDark ? require("../../assets/images/wuraa-removebg-logoVersionDark.png") : require("../../assets/images/wuralogo-removebg-preview.png")}
+                            style={{ width: 400, height: 110 }}
+                            resizeMode="contain"
+                        />
                         <Text className="text-sm text-muted-foreground text-center">
                             Connectez-vous pour recevoir votre argent
                         </Text>

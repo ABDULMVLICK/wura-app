@@ -1,22 +1,26 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, SafeAreaView } from "react-native";
 import { useRouter } from "expo-router";
-import { ArrowRight, Lock, User, CreditCard, Building2, Wallet } from "lucide-react-native";
+import { ArrowRight, Building2, CreditCard, Lock, User, Wallet } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
+import { Image, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Svg, { Rect } from "react-native-svg";
-import { clsx } from "clsx";
 
 export default function BankInfoScreen() {
     const router = useRouter();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
 
     return (
         <SafeAreaView className="flex-1 bg-background">
             <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                <View className="flex-1 px-6 pt-8 pb-12">
+                <View className="flex-1 px-6 pt-2 pb-12">
                     {/* Header */}
-                    <View className="mb-8 flex-col items-center gap-2 text-center">
-                        <Text className="text-3xl font-bold tracking-tight text-foreground">
-                            wura<Text className="text-accent">.</Text>
-                        </Text>
-                        <Text className="mt-4 text-2xl font-bold text-foreground text-center">
+                    <View className="mb-2 flex-col items-center gap-1 text-center">
+                        <Image
+                            source={isDark ? require("../../assets/images/wuraa-removebg-logoVersionDark.png") : require("../../assets/images/wuralogo-removebg-preview.png")}
+                            style={{ width: 400, height: 110 }}
+                            resizeMode="contain"
+                        />
+                        <Text className="mt-1 text-2xl font-bold text-foreground text-center">
                             Informations Bancaires
                         </Text>
                         <Text className="max-w-[300px] text-sm text-center text-muted-foreground">

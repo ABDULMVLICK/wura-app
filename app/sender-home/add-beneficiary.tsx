@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, MoreHorizontal, ChevronDown, Check, Clipboard, Landmark, Info, ArrowRight } from "lucide-react-native";
 import { clsx } from "clsx";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { ArrowRight, ChevronDown, ChevronLeft, Clipboard, Info, Landmark, MoreHorizontal } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
+import { useState } from "react";
+import { Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 // Reusable Floating Label Input Component
 const FloatingLabelInput = ({
@@ -72,6 +73,8 @@ const FloatingLabelInput = ({
 export default function AddBeneficiaryScreen() {
     const router = useRouter();
     const { amount } = useLocalSearchParams();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
     const [formData, setFormData] = useState({
         nom: "",
         prenom: "",
@@ -116,7 +119,11 @@ export default function AddBeneficiaryScreen() {
                     </TouchableOpacity>
 
                     <View className="absolute left-0 right-0 top-0 bottom-0 items-center justify-center pointer-events-none z-[-1]">
-                        <Text className="text-3xl font-bold tracking-tight text-[#F59E0B] font-display">wura.</Text>
+                        <Image
+                            source={isDark ? require("../../assets/images/wuraa-removebg-logoVersionDark.png") : require("../../assets/images/wuralogo-removebg-preview.png")}
+                            style={{ width: 400, height: 110 }}
+                            resizeMode="contain"
+                        />
                     </View>
 
                     <TouchableOpacity className="p-2 -mr-2 rounded-full active:bg-black/5 dark:active:bg-white/10">

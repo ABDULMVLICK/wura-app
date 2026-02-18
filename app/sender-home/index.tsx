@@ -1,6 +1,7 @@
 import { clsx } from "clsx";
 import { useRouter } from "expo-router";
 import { ArrowRight, ChevronDown, Plus } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 import { useState } from "react";
 import { Image, Keyboard, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 
@@ -15,6 +16,8 @@ const RECENTS = [
 export default function SenderHomeScreen() {
     const router = useRouter();
     const [amount, setAmount] = useState("50000");
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
 
     // Blink animation for the cursor (visual only, if we wanted manual cursor)
     // But TextInput handles its own cursor. We can keep the blinking bar as a custom cursor if we hide the real one, 
@@ -29,11 +32,11 @@ export default function SenderHomeScreen() {
             >
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                     <View className="flex-1">
-                        {/* Header */}
-                        <View className="flex-col items-center pt-2 pb-4 px-6 z-10">
+                        {/* Header: Profile icon right */}
+                        <View className="flex-row justify-end px-4 pt-2">
                             <TouchableOpacity
                                 onPress={() => router.push("/sender-home/profil")}
-                                className="absolute top-2 right-6"
+                                activeOpacity={0.7}
                             >
                                 <View className="w-10 h-10 rounded-full bg-gray-50 border border-gray-100 overflow-hidden">
                                     <Image
@@ -43,16 +46,13 @@ export default function SenderHomeScreen() {
                                     />
                                 </View>
                             </TouchableOpacity>
+                        </View>
 
-                            <View className="mb-8 mt-2">
-                                <Text className="text-3xl font-extrabold text-[#F59E0B] italic lowercase font-display">
-                                    wura.
-                                </Text>
-                            </View>
-
+                        {/* Country Selector */}
+                        <View className="items-center px-6 mt-4">
                             <View className="w-full max-w-xs">
                                 <TouchableOpacity className="w-full bg-[#F9FAFB] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-3 flex-row items-center justify-between shadow-sm active:scale-[0.98]">
-                                    <View className="flex-row items-center gap-3">
+                                    <View className="flex-row items-center gap-6">
                                         <Text className="text-xs font-medium text-gray-500 uppercase tracking-wide absolute -top-2.5 left-4 bg-white dark:bg-[#221b10] px-1">
                                             Pays du bénéficiaire
                                         </Text>
@@ -70,7 +70,7 @@ export default function SenderHomeScreen() {
                         </View>
 
                         {/* Main Content: AMOUNT INPUT */}
-                        <View className="flex-1 items-center justify-center px-6 -mt-10">
+                        <View className="flex-1 items-center justify-center px-6 mt-4">
                             <View className="items-center gap-1 w-full max-w-sm">
                                 <View className="relative w-full flex-row items-center justify-center">
                                     <TextInput
@@ -151,7 +151,7 @@ export default function SenderHomeScreen() {
                                     onPress={() => router.push({ pathname: "/sender-home/confirmation-amount", params: { amount } })}
                                     className="w-full bg-[#064E3B] py-4 rounded-xl shadow-lg shadow-emerald-900/10 flex-row items-center justify-center gap-3 active:scale-[0.98]"
                                 >
-                                    <Text className="text-white font-bold text-lg">Envoyer de l'argent</Text>
+                                    <Text className="text-white font-bold text-lg">Transférer</Text>
                                     <ArrowRight size={24} color="white" />
                                 </TouchableOpacity>
                             </View>

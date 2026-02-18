@@ -1,11 +1,14 @@
 import { Link, useRouter } from "expo-router";
 import { ArrowLeft, ArrowRight, Phone, User } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 import { useState } from "react";
 import { Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { FormField } from "../../components/FormField";
 
 export default function SenderSignupScreen() {
     const router = useRouter();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
     const [nom, setNom] = useState("");
     const [prenom, setPrenom] = useState("");
     const [telephone, setTelephone] = useState("");
@@ -23,7 +26,7 @@ export default function SenderSignupScreen() {
             >
                 <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
                     <View className="flex-1 items-center justify-center p-4">
-                        <View className="w-full max-w-md flex-col gap-8 rounded-3xl bg-muted px-6 py-10">
+                        <View className="w-full max-w-md flex-col gap-3 rounded-3xl bg-muted px-6 py-4">
                             {/* Back button */}
                             <TouchableOpacity
                                 onPress={() => router.back()}
@@ -34,10 +37,12 @@ export default function SenderSignupScreen() {
                             </TouchableOpacity>
 
                             {/* Logo */}
-                            <View className="items-center gap-3">
-                                <Text className="text-3xl font-extrabold tracking-tight text-foreground italic lowercase">
-                                    wura<Text className="text-[#F59E0B]">.</Text>
-                                </Text>
+                            <View className="items-center gap-1">
+                                <Image
+                                    source={isDark ? require("../../assets/images/wuraa-removebg-logoVersionDark.png") : require("../../assets/images/wuralogo-removebg-preview.png")}
+                                    style={{ width: 400, height: 110 }}
+                                    resizeMode="contain"
+                                />
                                 <Text className="text-sm text-muted-foreground text-center">
                                     Créez votre compte pour envoyer de l'argent
                                 </Text>

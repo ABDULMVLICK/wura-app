@@ -1,10 +1,13 @@
 import { useRouter } from "expo-router";
-import { Bell, ChevronRight, CreditCard, Edit2, LogOut, Settings, Shield, User } from "lucide-react-native";
-import { Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Bell, ChevronRight, CreditCard, Edit2, LogOut, Moon, Settings, Shield, Sun, User } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
+import { Image, SafeAreaView, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
 import { BottomTabBar } from "../../components/BottomTabBar";
 
 export default function ProfileScreen() {
     const router = useRouter();
+    const { colorScheme, toggleColorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
 
     const menuItems = [
         {
@@ -92,6 +95,30 @@ export default function ProfileScreen() {
                                     <ChevronRight size={20} className="text-muted-foreground opacity-50" />
                                 </TouchableOpacity>
                             ))}
+                        </View>
+
+                        {/* Dark Mode Toggle */}
+                        <View className="bg-card rounded-3xl p-2 shadow-sm border border-border mb-6">
+                            <View className="flex-row items-center justify-between p-4">
+                                <View className="flex-row items-center gap-4">
+                                    <View className="h-10 w-10 rounded-xl items-center justify-center bg-gray-50 dark:bg-gray-800">
+                                        {isDark ? (
+                                            <Moon size={20} color="#8B5CF6" />
+                                        ) : (
+                                            <Sun size={20} color="#F59E0B" />
+                                        )}
+                                    </View>
+                                    <Text className="text-base font-medium text-foreground">
+                                        Mode sombre
+                                    </Text>
+                                </View>
+                                <Switch
+                                    value={isDark}
+                                    onValueChange={toggleColorScheme}
+                                    trackColor={{ false: "#E5E7EB", true: "#064E3B" }}
+                                    thumbColor={isDark ? "#10B981" : "#f4f3f4"}
+                                />
+                            </View>
                         </View>
 
                         {/* Logout Button */}

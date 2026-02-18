@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "react";
-import { View, Text, Animated, SafeAreaView } from "react-native";
 import { useRouter } from "expo-router";
+import { useEffect, useRef } from "react";
+import { Animated, Image, SafeAreaView, Text, View } from "react-native";
 
 export default function SplashScreen() {
     const router = useRouter();
@@ -32,24 +32,26 @@ export default function SplashScreen() {
     }, []);
 
     return (
-        <SafeAreaView className="flex-1 bg-[#064E3B]">
+        <SafeAreaView className="flex-1 bg-[#2e2f31]">
             <View className="flex-1 items-center justify-center">
                 <Animated.View
                     style={{
                         opacity: fadeAnim,
                         transform: [{ scale: scaleAnim }],
                     }}
-                    className="items-center gap-4"
+                    className="items-center gap-2"
                 >
-                    <Text className="text-6xl font-extrabold tracking-tight text-white italic lowercase">
-                        wura<Text className="text-[#F59E0B]">.</Text>
-                    </Text>
+                    <Image
+                        source={require("../assets/images/wuraa-removebg-logoVersionDark.png")}
+                        style={{ width: 600, height: 160 }}
+                        resizeMode="contain"
+                    />
                     <Text className="text-base text-white/60 font-medium">
                         Transferts d'argent premium
                     </Text>
 
                     {/* Loading indicator */}
-                    <View className="mt-8 flex-row gap-2">
+                    <View className="mt-4 flex-row gap-2">
                         <View className="w-2 h-2 rounded-full bg-[#F59E0B] opacity-60" />
                         <View className="w-2 h-2 rounded-full bg-[#F59E0B] opacity-80" />
                         <View className="w-2 h-2 rounded-full bg-[#F59E0B]" />
