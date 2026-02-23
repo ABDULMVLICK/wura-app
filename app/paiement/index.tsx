@@ -1,7 +1,7 @@
 import { clsx } from "clsx";
 import { useRouter } from "expo-router";
 import { ArrowRight, ChevronLeft, ShieldCheck } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTransfer } from "../../contexts/TransferContext";
@@ -69,15 +69,33 @@ function formatAmount(value: number): string {
     return value.toLocaleString("fr-FR").replace(/,/g, ".");
 }
 
+import { useKkiapay } from "@kkiapay-org/react-native-sdk";
 import { TransferService } from "../../services/transfers";
 
 // ... (keep PAYMENT_METHODS and formatAmount)
 
 export default function PaiementScreen() {
     const router = useRouter();
-    const { state, getTotalXOF, getEstimatedEUR, setPaymentMethod } = useTransfer();
+    const { state, getTotalXOF, getCalculatedEUR, setPaymentMethod } = useTransfer();
     const [selected, setSelected] = useState("mtn");
     const [loading, setLoading] = useState(false);
+    const { openKkiapayWidget, addSuccessListener, addKkiapayCloseListener } = useKkiapay();
+    const pendingTxRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        addSuccessListener((data: any) => {
+            console.log("Kkiapay Success Event:", data);
+            if (pendingTxRef.current) {
+                router.push({ pathname: "/sender-home/transfert-reussi", params: { transactionId: pendingTxRef.current } });
+                pendingTxRef.current = null;
+            }
+        });
+
+        addKkiapayCloseListener(() => {
+            console.log("Kkiapay Widget closed");
+            setLoading(false);
+        });
+    }, []);
 
     const amount = parseInt(getTotalXOF(), 10) || 0;
 
@@ -96,17 +114,25 @@ export default function PaiementScreen() {
             // Création de la transaction en base de données (Statut INITIATED)
             const tx = await TransferService.createTransaction({
                 amountFCFA: amount,
-                amountEUR: Number(getEstimatedEUR()),
+                amountEUR: Number(getCalculatedEUR()),
                 recipient: state.recipient,
-                paymentMethodId: method.id
+                paymentMethodId: method.id,
+                deliverySpeed: state.deliverySpeed
             });
 
-            // On navigue vers la page de suivi/succès en passant l'ID pour le polling
-            router.push({ pathname: "/sender-home/transfert-reussi", params: { transactionId: tx.id } });
+            pendingTxRef.current = tx.id;
+
+            // Ouverture du widget Kkiapay pour valider le paiement mobile
+            openKkiapayWidget({
+                amount: amount,
+                key: process.env.EXPO_PUBLIC_KKIAPAY_PUBLIC_KEY || "",
+                sandbox: true,
+                reason: "Envoi Wura vers " + state.recipient.prenom,
+                data: tx.id // ID de la DB passé au webhook
+            });
+
         } catch (error) {
             console.error("Erreur lors de l'initiation de la transaction:", error);
-            // Gérer l'erreur (ex: Toast ou Alert)
-        } finally {
             setLoading(false);
         }
     };

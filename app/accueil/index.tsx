@@ -3,6 +3,7 @@ import { ArrowUpRight, Bell, QrCode, User } from "lucide-react-native";
 import { Dimensions, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomTabBar } from "../../components/BottomTabBar";
+import { useAuth } from "../../contexts/AuthContext";
 import { useReceiver } from "../../contexts/ReceiverContext";
 
 // Mock Data for Transactions
@@ -54,6 +55,7 @@ const { width } = Dimensions.get('window');
 export default function HomeScreen() {
     const router = useRouter();
     const { state } = useReceiver();
+    const { profile } = useAuth();
     const balance = state.balanceEUR;
 
     return (
@@ -69,7 +71,9 @@ export default function HomeScreen() {
                                 </View>
                                 <View>
                                     <Text className="text-xs text-muted-foreground">Bonjour,</Text>
-                                    <Text className="text-sm font-bold text-foreground">Jean Dupont</Text>
+                                    <Text className="text-sm font-bold text-foreground">
+                                        {profile?.sender?.firstName || profile?.prenom || 'Utilisateur'}
+                                    </Text>
                                 </View>
                             </View>
                             <TouchableOpacity className="relative flex h-10 w-10 items-center justify-center rounded-full bg-muted">
@@ -94,7 +98,9 @@ export default function HomeScreen() {
 
                                 {/* WuraID Badge */}
                                 <View className="mb-6 flex-row items-center gap-2 rounded-full bg-white/10 px-4 py-1.5">
-                                    <Text className="text-sm font-semibold text-accent" style={{ color: '#f59e0b' }}>@JeanD</Text>
+                                    <Text className="text-sm font-semibold text-accent" style={{ color: '#f59e0b' }}>
+                                        {profile?.receiver?.wuraId || profile?.wuraId || '@Wura'}
+                                    </Text>
                                     <View className="h-1 w-1 rounded-full bg-white/40" />
                                     <QrCode size={14} color="white" className="opacity-80" />
                                 </View>

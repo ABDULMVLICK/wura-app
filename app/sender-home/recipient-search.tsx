@@ -1,9 +1,11 @@
 import { clsx } from "clsx";
 import { useRouter } from "expo-router";
 import { ChevronLeft, ChevronRight, ChevronRight as ChevronRightIcon, Plus, QrCode, Search } from "lucide-react-native";
-import { Image, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTransfer } from "../../contexts/TransferContext";
+import { AuthService } from "../../services/auth";
 
 // Mock Data for Recipients
 const RECIPIENTS = [
@@ -18,15 +20,53 @@ export default function RecipientSearchScreen() {
     const router = useRouter();
     const { setRecipient } = useTransfer();
 
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState<{ id: string, wuraId: string, email: string }[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+
+    useEffect(() => {
+        if (!searchQuery.trim() || searchQuery.length < 3) {
+            setSearchResults([]);
+            return;
+        }
+
+        const timeoutId = setTimeout(async () => {
+            setIsSearching(true);
+            try {
+                const results = await AuthService.searchWuraId(searchQuery.trim());
+                setSearchResults(results);
+            } catch (error) {
+                console.error("Search failed:", error);
+                setSearchResults([]);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [searchQuery]);
+
     const handleSelectRecipient = (recipient: any) => {
-        // Parse mock name
-        const names = recipient.name.split(' ');
-        const nom = names.pop() || "";
-        const prenom = names.join(' ');
+        // Handle mock data format vs real API data format
+        const isApiResult = 'email' in recipient;
+
+        let nom = "";
+        let prenom = "";
+
+        if (isApiResult) {
+            // For API result, we don't have the explicit name so we just pretend via the email.
+            prenom = recipient.email ? recipient.email.split('@')[0] : "Wura";
+            nom = "Utilisateur";
+        } else {
+            const names = recipient.name.split(' ');
+            nom = names.pop() || "";
+            prenom = names.join(' ');
+        }
 
         // Save selected recipient into global state
         setRecipient({
             id: recipient.id,
+            wuraId: isApiResult ? recipient.wuraId : recipient.handle.replace('@', ''),
             nom: nom,
             prenom: prenom,
             iban: "FR76 **** **** **** 8821", // Mocked for existing contacts
@@ -65,13 +105,29 @@ export default function RecipientSearchScreen() {
                         </View>
                         <TextInput
                             autoFocus={true}
-                            className="block w-full pl-12 pr-4 py-4 bg-white dark:bg-[#2d2c1b] border-2 border-transparent focus:border-[#f9f506] rounded-xl text-lg text-gray-900 dark:text-gray-100 placeholder:text-gray-400 shadow-sm"
-                            placeholder="À qui envoyez-vous ?"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            autoCapitalize="none"
+                            className="block w-full pl-12 pr-12 py-4 bg-white dark:bg-[#2d2c1b] border-2 border-transparent focus:border-[#f9f506] rounded-xl text-lg text-gray-900 dark:text-gray-100 placeholder:text-gray-400 shadow-sm"
+                            placeholder="Wura ID ou Téléphone"
                             placeholderTextColor="#9ca3af"
                         />
-                        <View className="absolute inset-y-0 right-0 pr-4 flex items-center justify-center h-full">
-                            <View className="h-2 w-2 rounded-full bg-[#f9f506]" />
-                        </View>
+                        {isSearching ? (
+                            <View className="absolute inset-y-0 right-0 pr-4 flex items-center justify-center h-full">
+                                <ActivityIndicator size="small" color="#d97706" />
+                            </View>
+                        ) : searchQuery.length > 0 ? (
+                            <TouchableOpacity
+                                onPress={() => setSearchQuery("")}
+                                className="absolute inset-y-0 right-0 pr-4 flex items-center justify-center h-full"
+                            >
+                                <Text className="text-gray-400 font-bold text-lg">✕</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <View className="absolute inset-y-0 right-0 pr-4 flex items-center justify-center h-full">
+                                <View className="h-2 w-2 rounded-full bg-[#f9f506]" />
+                            </View>
+                        )}
                     </View>
                 </View>
 
@@ -90,19 +146,27 @@ export default function RecipientSearchScreen() {
                     <ChevronRight size={24} className="text-gray-400" color="#9ca3af" />
                 </TouchableOpacity>
 
-                {/* Suggested Header */}
+                {/* Suggested / Results Header */}
                 <View className="mb-4 flex-row items-center justify-between">
                     <Text className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Suggérés
+                        {searchQuery.length >= 3 ? "Résultats de la recherche" : "Suggérés"}
                     </Text>
-                    <TouchableOpacity>
-                        <Text className="text-sm font-medium text-yellow-600 dark:text-[#f9f506]">Voir tout</Text>
-                    </TouchableOpacity>
+                    {!searchQuery && (
+                        <TouchableOpacity>
+                            <Text className="text-sm font-medium text-yellow-600 dark:text-[#f9f506]">Voir tout</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {/* List of Recipients */}
                 <View className="space-y-3 gap-3">
-                    {RECIPIENTS.map((recipient) => (
+                    {searchQuery.length >= 3 && searchResults.length === 0 && !isSearching ? (
+                        <View className="py-6 items-center">
+                            <Text className="text-gray-500 text-center">Aucun utilisateur trouvé pour @{searchQuery.trim()}</Text>
+                        </View>
+                    ) : null}
+
+                    {(searchQuery.length >= 3 ? searchResults : RECIPIENTS).map((recipient: any) => (
                         <TouchableOpacity
                             key={recipient.id}
                             onPress={() => handleSelectRecipient(recipient)}
@@ -116,15 +180,21 @@ export default function RecipientSearchScreen() {
                                         resizeMode="cover"
                                     />
                                 ) : (
-                                    <View className={clsx("h-12 w-12 rounded-full items-center justify-center border-2 border-white dark:border-gray-800", recipient.color)}>
-                                        <Text className={clsx("font-bold text-lg", recipient.text)}>{recipient.initial}</Text>
+                                    <View className={clsx("h-12 w-12 rounded-full items-center justify-center border-2 border-white dark:border-gray-800", recipient.color || "bg-yellow-100")}>
+                                        <Text className={clsx("font-bold text-lg", recipient.text || "text-yellow-600")}>
+                                            {recipient.initial || (recipient.wuraId ? recipient.wuraId.substring(0, 2).toUpperCase() : "WU")}
+                                        </Text>
                                     </View>
                                 )}
                             </View>
 
                             <View className="ml-4 flex-1">
-                                <Text className="font-bold text-gray-900 dark:text-white">{recipient.name}</Text>
-                                <Text className="text-sm text-gray-500 dark:text-gray-400">{recipient.handle}</Text>
+                                <Text className="font-bold text-gray-900 dark:text-white">
+                                    {recipient.name || (recipient.email ? recipient.email.split('@')[0] : "Utilisateur Wura")}
+                                </Text>
+                                <Text className="text-sm text-gray-500 dark:text-gray-400">
+                                    @{recipient.handle ? recipient.handle.replace('@', '') : recipient.wuraId}
+                                </Text>
                             </View>
 
                             <View className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 dark:bg-white/5">

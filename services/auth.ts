@@ -40,5 +40,13 @@ export const AuthService = {
     updateWuraId: async (wuraId: string): Promise<UserProfile> => {
         const response = await api.patch('/users/me/wura-id', { wuraId });
         return response.data;
+    },
+
+    /**
+     * Recherche un WuraID ou une liste suggérée
+     */
+    searchWuraId: async (query: string): Promise<{ id: string, wuraId: string, email: string }[]> => {
+        const response = await api.get(`/users/search?q=${encodeURIComponent(query)}`);
+        return response.data;
     }
 };

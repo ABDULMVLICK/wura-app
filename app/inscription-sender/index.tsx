@@ -7,10 +7,12 @@ import { useState } from "react";
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FormField } from "../../components/FormField";
+import { useAuth } from "../../contexts/AuthContext";
 import { auth } from "../../lib/firebase";
 import { AuthService } from "../../services/auth";
 
 export default function SenderSignupScreen() {
+    const { refreshProfile } = useAuth();
     const router = useRouter();
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === "dark";
@@ -65,6 +67,7 @@ export default function SenderSignupScreen() {
                     lastName: nom,
                     country: "CIV", // Par défaut ou à rajouter dans le form
                 });
+                await refreshProfile();
                 // La redirection est gérée par AuthContext dans _layout.tsx
             }
         } catch (error: any) {

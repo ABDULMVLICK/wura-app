@@ -1,3 +1,4 @@
+import { KkiapayProvider } from '@kkiapay-org/react-native-sdk';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -31,15 +32,20 @@ function RootLayoutNav() {
       router.replace("/choix");
     } else if (user && profile && inAuthGroup) {
       // Connecté et sur une page d'auth → rediriger vers la home
-      if (profile.role === "receiver" && !profile.wuraId) {
+      const role = profile.role?.toLowerCase();
+      const hasWuraId = profile.wuraId || profile?.receiver?.wuraId;
+      if (role === "receiver" && !hasWuraId) {
         // Receiver sans wuraId → doit d'abord choisir son wuraId
         router.replace("/wura-id");
-      } else if (profile.role === "sender") {
+      } else if (role === "sender") {
         router.replace("/sender-home");
       } else {
         router.replace("/accueil");
       }
-    } else if (user && profile && profile.role === "receiver" && !profile.wuraId && !isWuraIdPage && !inAuthGroup) {
+    } else if (user && !profile && !loading && firstSegment === "connexion-sender") {
+      // Utilisateur authentifié via Firebase, mais sans profil NestJS (nouveau compte)
+      router.replace("/inscription-sender");
+    } else if (user && profile && profile.role?.toLowerCase() === "receiver" && !(profile.wuraId || profile?.receiver?.wuraId) && !isWuraIdPage && !inAuthGroup) {
       // Receiver connecté mais sans wuraId, et pas sur la page wura-id → forcer
       router.replace("/wura-id");
     }
@@ -58,14 +64,16 @@ function RootLayoutNav() {
 
 export default function Layout() {
   return (
-    <AuthProvider>
-      <ReceiverProvider>
-        <TransferProvider>
-          <RootLayoutNav />
-          <OfflineBanner />
-          <Toast />
-        </TransferProvider>
-      </ReceiverProvider>
-    </AuthProvider>
+    <KkiapayProvider>
+      <AuthProvider>
+        <ReceiverProvider>
+          <TransferProvider>
+            <RootLayoutNav />
+            <OfflineBanner />
+            <Toast />
+          </TransferProvider>
+        </ReceiverProvider>
+      </AuthProvider>
+    </KkiapayProvider>
   );
 }

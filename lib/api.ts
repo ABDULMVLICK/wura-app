@@ -1,3 +1,4 @@
+import { getIdToken, signOut } from '@react-native-firebase/auth';
 import axios from 'axios';
 import { router } from 'expo-router';
 import { auth } from './firebase';
@@ -14,7 +15,7 @@ const api = axios.create({
 api.interceptors.request.use(async (config) => {
     const user = auth.currentUser;
     if (user) {
-        const token = await user.getIdToken(true);
+        const token = await getIdToken(user, true);
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -28,7 +29,7 @@ api.interceptors.response.use(
     async (error) => {
         if (error.response && error.response.status === 401) {
             // Token expiré ou invalide
-            await auth.signOut();
+            await signOut(auth);
             // Redirige vers l'écran d'accueil pour forcer la reconnexion
             router.replace('/choix');
         }

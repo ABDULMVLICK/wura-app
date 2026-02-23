@@ -119,6 +119,7 @@ export default function AddBeneficiaryScreen() {
         // Save the new beneficiary in the global context
         setRecipient({
             id: `new-${Date.now()}`,
+            wuraId: `${data.prenom.replace(/\s+/g, '')}${data.nom.charAt(0).toUpperCase()}`, // Auto-generated for routing validation
             nom: data.nom,
             prenom: data.prenom,
             iban: data.iban,

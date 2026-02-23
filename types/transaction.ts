@@ -15,6 +15,7 @@ export interface TransactionInfo {
 
 export interface Recipient {
     id?: string;
+    wuraId?: string;
     nom: string;
     prenom: string;
     iban: string;

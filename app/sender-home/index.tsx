@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 import { useRouter } from "expo-router";
-import { ArrowRight, ChevronDown, Plus } from "lucide-react-native";
+import { ArrowRight, ArrowUpDown, ChevronDown, Plus } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { useEffect, useState } from "react";
 import { Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
@@ -18,15 +18,16 @@ const RECENTS = [
 
 export default function SenderHomeScreen() {
     const router = useRouter();
-    const { state: transferState, setAmountXOF, getEstimatedEUR } = useTransfer();
+    const { state: transferState, setInputValue, toggleCurrency, getCalculatedXOF, getCalculatedEUR } = useTransfer();
 
     useEffect(() => {
-        if (!transferState.amountXOF) {
-            setAmountXOF("50000");
+        if (!transferState.inputValue) {
+            setInputValue("50000");
         }
     }, []);
 
-    const amount = transferState.amountXOF;
+    const amount = transferState.inputValue;
+    const isXofInput = transferState.inputCurrency === 'XOF';
     const [isCountryModalVisible, setIsCountryModalVisible] = useState(false);
     const [selectedCountry, setSelectedCountry] = useState(WESTERN_COUNTRIES[0]); // France
     const { colorScheme } = useColorScheme();
@@ -85,24 +86,36 @@ export default function SenderHomeScreen() {
                                 <View className="relative w-full flex-row items-center justify-center">
                                     <TextInput
                                         value={amount}
-                                        onChangeText={(text) => setAmountXOF(text.replace(/[^0-9]/g, ''))}
-                                        keyboardType="numeric"
-                                        // autoFocus={true} // Can behave oddly on some devices if navigating back
+                                        onChangeText={(text) => setInputValue(text.replace(/[^0-9.,]/g, ''))}
+                                        keyboardType="decimal-pad"
                                         className="w-full bg-transparent text-center text-[3.5rem] font-bold tracking-tight text-gray-900 dark:text-white leading-none p-0"
                                         placeholder="0"
                                         placeholderTextColor="#cbd5e1"
                                         selectionColor="#F59E0B"
                                     />
                                     <Text className="absolute right-0 top-1/2 -translate-y-1/2 text-lg font-bold text-gray-400 dark:text-gray-500 hidden sm:flex">
-                                        FCFA
+                                        {isXofInput ? 'FCFA' : '€'}
                                     </Text>
                                 </View>
                                 <Text className="text-lg font-bold text-gray-400 dark:text-gray-500 sm:hidden">
-                                    FCFA
+                                    {isXofInput ? 'FCFA' : '€'}
                                 </Text>
 
-                                <View className="flex-row items-center justify-center gap-2 mt-2">
-                                    <Text className="text-lg font-medium text-gray-400 dark:text-gray-500">≈ {getEstimatedEUR() || "0.00"} €</Text>
+                                <View className="flex-row items-center justify-center gap-3 mt-4">
+                                    <View className="flex-1 h-[1px] bg-gray-200 dark:bg-white/10" />
+                                    <TouchableOpacity
+                                        onPress={toggleCurrency}
+                                        className="bg-gray-100 dark:bg-white/10 p-2 rounded-full active:scale-95"
+                                    >
+                                        <ArrowUpDown size={16} className="text-[#064E3B] dark:text-[#F59E0B]" />
+                                    </TouchableOpacity>
+                                    <View className="flex-1 h-[1px] bg-gray-200 dark:bg-white/10" />
+                                </View>
+
+                                <View className="flex-row items-center justify-center gap-2 mt-4">
+                                    <Text className="text-xl font-semibold text-[#064E3B] dark:text-[#F59E0B]">
+                                        ≈ {isXofInput ? getCalculatedEUR() : getCalculatedXOF()} {isXofInput ? '€' : 'FCFA'}
+                                    </Text>
                                 </View>
 
                                 <View className="mt-2 px-3 py-1 rounded-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">

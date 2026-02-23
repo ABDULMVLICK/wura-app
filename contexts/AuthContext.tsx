@@ -39,12 +39,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setProfile(profileData);
             } else {
                 setProfile(null);
-                // Si l'auth existe mais l'API refuse ou ne trouve pas le profil
-                try {
-                    await firebaseSignOut(auth);
-                } catch (e) {
-                    console.error("Erreur auto-déconnexion:", e);
-                }
             }
         } catch (error) {
             console.error("Erreur lors du chargement API du profil:", error);

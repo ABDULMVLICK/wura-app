@@ -1,15 +1,17 @@
+import { clsx } from "clsx";
 import { useRouter } from "expo-router";
-import { ArrowRight, ChevronLeft } from "lucide-react-native";
+import { ArrowRight, ChevronLeft, Clock, Zap } from "lucide-react-native";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTransfer } from "../../contexts/TransferContext";
 
 export default function ConfirmationAmountScreen() {
     const router = useRouter();
-    const { state, getEstimatedEUR, getFeesXOF, getTotalXOF } = useTransfer();
+    const { state, setDeliverySpeed, getCalculatedXOF, getCalculatedEUR, getFeesXOF, getTotalXOF } = useTransfer();
 
-    const numericAmount = parseInt(state.amountXOF.replace(/\s/g, ''), 10) || 0;
-    const euroAmount = getEstimatedEUR() || "0.00";
+    const numericAmount = parseInt(getCalculatedXOF(), 10) || 0;
+    const euroAmount = getCalculatedEUR() || "0.00";
+    const isLoading = state.isQuoting;
 
     const handleConfirm = () => {
         // Navigate to Recipient Search (which allows selecting or adding beneficiary)
@@ -38,8 +40,8 @@ export default function ConfirmationAmountScreen() {
                     </Text>
 
                     <View className="items-center">
-                        <Text className="text-[3.5rem] font-bold tracking-tight text-[#F59E0B] leading-none text-center">
-                            {Number(numericAmount).toLocaleString('fr-FR')}
+                        <Text className={clsx("text-[3.5rem] font-bold tracking-tight text-[#F59E0B] leading-none text-center", isLoading && "opacity-50")}>
+                            {isLoading ? "..." : Number(numericAmount).toLocaleString('fr-FR')}
                         </Text>
                         <Text className="text-2xl font-bold text-slate-300 dark:text-slate-600 mt-2">
                             FCFA
@@ -48,22 +50,82 @@ export default function ConfirmationAmountScreen() {
 
                     <View className="mt-8 flex-row items-center justify-center gap-2 bg-slate-50 dark:bg-white/5 py-2 px-4 rounded-full">
                         <Text className="text-base font-medium text-slate-500 dark:text-slate-400">
-                            ≈ {euroAmount} €
+                            ≈ {isLoading ? "..." : euroAmount} €
                         </Text>
                     </View>
 
-                    <View className="mt-12 w-full bg-slate-50 dark:bg-white/5 rounded-2xl p-6 space-y-4">
+                    {/* Vitesse de transfert */}
+                    <View className="mt-8 w-full gap-3">
+                        <Text className="text-sm font-semibold text-slate-900 dark:text-white px-2">Vitesse de transfert</Text>
+
+                        <TouchableOpacity
+                            onPress={() => setDeliverySpeed('INSTANT')}
+                            className={clsx(
+                                "flex-row items-center justify-between p-4 rounded-2xl border-2 transition-all",
+                                state.deliverySpeed === 'INSTANT'
+                                    ? "bg-[#064E3B]/5 border-[#064E3B] dark:bg-[#F59E0B]/10 dark:border-[#F59E0B]"
+                                    : "bg-white border-slate-100 dark:bg-white/5 dark:border-white/10"
+                            )}
+                        >
+                            <View className="flex-row items-center gap-4">
+                                <View className={clsx(
+                                    "p-3 rounded-full",
+                                    state.deliverySpeed === 'INSTANT' ? "bg-[#064E3B]/10 dark:bg-[#F59E0B]/20" : "bg-slate-100 dark:bg-white/10"
+                                )}>
+                                    <Zap size={20} className={state.deliverySpeed === 'INSTANT' ? "text-[#064E3B] dark:text-[#F59E0B]" : "text-slate-500 dark:text-slate-400"} />
+                                </View>
+                                <View>
+                                    <Text className={clsx("font-bold text-base", state.deliverySpeed === 'INSTANT' ? "text-[#064E3B] dark:text-white" : "text-slate-900 dark:text-white")}>Instantané</Text>
+                                    <Text className="text-sm text-slate-500">Arrive en ~30 secondes</Text>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => setDeliverySpeed('STANDARD')}
+                            className={clsx(
+                                "flex-row items-center justify-between p-4 rounded-2xl border-2 transition-all",
+                                state.deliverySpeed === 'STANDARD'
+                                    ? "bg-[#064E3B]/5 border-[#064E3B] dark:bg-[#F59E0B]/10 dark:border-[#F59E0B]"
+                                    : "bg-white border-slate-100 dark:bg-white/5 dark:border-white/10"
+                            )}
+                        >
+                            <View className="flex-row items-center gap-4">
+                                <View className={clsx(
+                                    "p-3 rounded-full",
+                                    state.deliverySpeed === 'STANDARD' ? "bg-[#064E3B]/10 dark:bg-[#F59E0B]/20" : "bg-slate-100 dark:bg-white/10"
+                                )}>
+                                    <Clock size={20} className={state.deliverySpeed === 'STANDARD' ? "text-[#064E3B] dark:text-[#F59E0B]" : "text-slate-500 dark:text-slate-400"} />
+                                </View>
+                                <View>
+                                    <Text className={clsx("font-bold text-base", state.deliverySpeed === 'STANDARD' ? "text-[#064E3B] dark:text-white" : "text-slate-900 dark:text-white")}>Standard</Text>
+                                    <Text className="text-sm text-slate-500">Livré sous 1 à 3 jours</Text>
+                                </View>
+                            </View>
+                            <Text className={clsx("font-bold text-xs uppercase tracking-wider", state.deliverySpeed === 'STANDARD' ? "text-[#064E3B] dark:text-[#F59E0B]" : "text-slate-500")}>Moins cher</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View className="mt-8 w-full bg-slate-50 dark:bg-white/5 rounded-2xl p-6 space-y-4">
                         <View className="flex-row justify-between items-center pb-4 border-b border-slate-100 dark:border-white/10">
-                            <Text className="text-slate-500 dark:text-slate-400">Frais de transfert</Text>
-                            <Text className="font-bold text-slate-900 dark:text-white">{getFeesXOF()} FCFA</Text>
+                            <Text className="text-slate-500 dark:text-slate-400">Taux Wura appliqué</Text>
+                            <Text className="font-bold text-slate-900 dark:text-white">
+                                {isLoading ? "..." : (state.quote?.taux_wura_cfa || "-")} FCFA = 1 €
+                            </Text>
                         </View>
                         <View className="flex-row justify-between items-center pb-4 border-b border-slate-100 dark:border-white/10">
-                            <Text className="text-slate-500 dark:text-slate-400">Total à payer</Text>
-                            <Text className="font-bold text-slate-900 dark:text-white">{Number(getTotalXOF()).toLocaleString('fr-FR')} FCFA</Text>
+                            <View className="flex-row items-center gap-1">
+                                <Text className="text-slate-500 dark:text-slate-400">Frais Mobile Money</Text>
+                            </View>
+                            <Text className="font-bold text-slate-900 dark:text-white">
+                                {isLoading ? "..." : getFeesXOF()} FCFA
+                            </Text>
                         </View>
                         <View className="flex-row justify-between items-center">
-                            <Text className="text-slate-500 dark:text-slate-400">Taux de change</Text>
-                            <Text className="font-bold text-slate-900 dark:text-white">1 € = 655.95 FCFA</Text>
+                            <Text className="text-slate-500 dark:text-slate-400">Total à débiter</Text>
+                            <Text className="font-bold text-slate-900 dark:text-white">
+                                {isLoading ? "..." : Number(getTotalXOF()).toLocaleString('fr-FR')} FCFA
+                            </Text>
                         </View>
                     </View>
                 </View>

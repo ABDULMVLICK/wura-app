@@ -1,43 +1,62 @@
-import React, { createContext, useContext, useState } from 'react';
-
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { TransferService } from '../services/transfers';
 import { TransactionInfo } from '../types/transaction';
 
 export interface ReceiverState {
     balanceEUR: number;
     recentTransactions: TransactionInfo[];
+    isLoading: boolean;
 }
 
 interface ReceiverContextType {
     state: ReceiverState;
     initiateWithdrawal: (amountEUR: number) => Promise<boolean>;
-    // In the future: refreshBalance(), etc.
+    refreshBalance: () => Promise<void>;
 }
 
-// Fictional initial state for the MVP interactive demonstration
+// Initial state starts empty, with 0 balance
 const defaultState: ReceiverState = {
-    balanceEUR: 450.00,
-    recentTransactions: [
-        {
-            id: 'TX-123',
-            amountEUR: 200.00,
-            senderName: "Moussa Diabaté",
-            date: new Date(Date.now() - 86400000 * 2), // 2 days ago
-            status: 'COMPLETED'
-        },
-        {
-            id: 'TX-124',
-            amountEUR: 250.00,
-            senderName: "Amina Sylla",
-            date: new Date(Date.now() - 86400000 * 5), // 5 days ago
-            status: 'COMPLETED'
-        }
-    ]
+    balanceEUR: 0.00,
+    recentTransactions: [],
+    isLoading: true
 };
 
 const ReceiverContext = createContext<ReceiverContextType | undefined>(undefined);
 
 export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, setState] = useState<ReceiverState>(defaultState);
+
+    const refreshBalance = async () => {
+        setState(prev => ({ ...prev, isLoading: true }));
+        try {
+            const history = await TransferService.getHistory();
+
+            // Format API data to match the UI expected structure
+            const formattedHistory: any[] = history.map((tx: any) => ({
+                id: tx.referenceId || tx.id,
+                amountEUR: tx.amountFiatOutExpected || tx.amountEUR || 0,
+                senderName: tx.sender?.prenom ? `${tx.sender.prenom} ${tx.sender.nom}` : "Utilisateur Wura",
+                date: new Date(tx.createdAt || tx.date || Date.now()),
+                status: tx.status
+            }));
+
+            // Optional: calculate balance from history if needed, 
+            // for now balance is forced to 0 as requested by user.
+            setState(prev => ({
+                ...prev,
+                recentTransactions: formattedHistory,
+                balanceEUR: 0.00, // Force balance to 0 EUR 
+                isLoading: false
+            }));
+        } catch (error) {
+            console.error("Failed to fetch receiver history:", error);
+            setState(prev => ({ ...prev, isLoading: false }));
+        }
+    };
+
+    useEffect(() => {
+        refreshBalance();
+    }, []);
 
     const initiateWithdrawal = async (amount: number): Promise<boolean> => {
         // Mock API call to initiate the Off-Ramp process (Mt Pelerin / Ramp)
@@ -60,7 +79,8 @@ export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return (
         <ReceiverContext.Provider value={{
             state,
-            initiateWithdrawal
+            initiateWithdrawal,
+            refreshBalance
         }}>
             {children}
         </ReceiverContext.Provider>

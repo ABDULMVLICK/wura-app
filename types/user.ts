@@ -4,8 +4,9 @@ export interface UserProfile {
     nom: string;
     prenom: string;
     telephone?: string;
-    email: string;
-    role: "sender" | "receiver";
+    phone?: string;
+    email?: string;
+    role: "sender" | "receiver" | "SENDER" | "RECEIVER";
     wuraId?: string;
     iban?: string;
     bic?: string;
@@ -14,4 +15,12 @@ export interface UserProfile {
     web3AuthWalletAddress?: string; // Polygon Embedded Wallet
     createdAt?: Date | string;
     updatedAt?: Date | string;
+    sender?: {
+        firstName: string;
+        lastName: string;
+        country: string;
+    };
+    receiver?: {
+        wuraId: string;
+    };
 }

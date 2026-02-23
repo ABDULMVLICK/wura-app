@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { ArrowLeft, Bell, Edit2, FileText, HelpCircle, LogOut, Moon, Shield, Sun, User } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import {  Image,  ScrollView, Switch, Text, TouchableOpacity, View  } from "react-native"
+import { Image, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -87,10 +87,10 @@ export default function SenderProfileScreen() {
                             </TouchableOpacity>
                         </View>
                         <Text className="text-xl font-bold text-gray-900 dark:text-white">
-                            {profile?.prenom} {profile?.nom}
+                            {profile?.sender?.firstName || profile?.prenom} {profile?.sender?.lastName || profile?.nom}
                         </Text>
                         <Text className="text-sm text-gray-500 dark:text-gray-400">
-                            {profile?.telephone || profile?.email}
+                            {profile?.telephone || profile?.phone || profile?.email}
                         </Text>
                         <View className="mt-2 px-3 py-1 rounded-full bg-[#ecfdf5] dark:bg-[#064E3B]/20 border border-[#10b981]/20">
                             <Text className="text-xs font-medium text-[#059669] dark:text-[#34d399]">Compte Vérifié</Text>
