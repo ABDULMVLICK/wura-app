@@ -1,14 +1,37 @@
-import { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView } from "react-native";
-import { useRouter } from "expo-router";
-import { ChevronLeft, Wallet, Info, ArrowRight, Lock, Building2 } from "lucide-react-native";
 import { clsx } from "clsx";
+import { useRouter } from "expo-router";
+import { ArrowRight, Building2, ChevronLeft, Info, Lock, Wallet } from "lucide-react-native";
+import { useState } from "react";
+import { ActivityIndicator, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useReceiver } from "../../contexts/ReceiverContext";
 
 export default function RetraitBanqueScreen() {
     const router = useRouter();
-    const [amount] = useState(100.00);
-    const balance = 2450.00;
+    const { state, initiateWithdrawal } = useReceiver();
+    const [amount, setAmount] = useState<string>("");
+    const [isLoading, setIsLoading] = useState(false);
+
+    const balance = state.balanceEUR;
     const fees = 0.50;
+
+    const numericAmount = parseFloat(amount.replace(/,/g, '.')) || 0;
+    const totalDeducted = numericAmount > 0 ? numericAmount + fees : 0;
+    const isValid = numericAmount > 0 && totalDeducted <= balance;
+
+    const handleWithdraw = async () => {
+        if (!isValid) return;
+        setIsLoading(true);
+        const success = await initiateWithdrawal(totalDeducted);
+        setIsLoading(false);
+
+        if (success) {
+            router.push({
+                pathname: "/retrait-banque/succes",
+                params: { amount: numericAmount.toString() }
+            });
+        }
+    };
 
     return (
         <SafeAreaView className="flex-1 bg-background">
@@ -30,9 +53,14 @@ export default function RetraitBanqueScreen() {
                         <Text className="mb-4 text-sm text-muted-foreground">Combien souhaitez-vous retirer ?</Text>
                         <View className="flex-row items-center justify-center gap-2">
                             <Text className="text-4xl font-bold text-primary">€</Text>
-                            <Text className="text-6xl font-bold text-primary">
-                                {amount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}
-                            </Text>
+                            <TextInput
+                                value={amount}
+                                onChangeText={setAmount}
+                                keyboardType="numeric"
+                                placeholder="0.00"
+                                placeholderTextColor="#cbd5e1"
+                                className="text-6xl font-bold text-primary p-0 m-0"
+                            />
                         </View>
 
                         {/* Balance Badge */}
@@ -67,7 +95,7 @@ export default function RetraitBanqueScreen() {
                     <View className="mb-8 rounded-3xl border border-border bg-card p-6 shadow-sm">
                         <View className="mb-4 flex-row items-center justify-between">
                             <Text className="text-sm text-muted-foreground">Montant du retrait</Text>
-                            <Text className="font-bold text-foreground">{amount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</Text>
+                            <Text className="font-bold text-foreground">{numericAmount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</Text>
                         </View>
                         <View className="mb-4 flex-row items-center justify-between border-b border-border/50 pb-4">
                             <View className="flex-row items-center gap-1.5">
@@ -78,10 +106,13 @@ export default function RetraitBanqueScreen() {
                         </View>
                         <View className="flex-row items-center justify-between">
                             <Text className="font-bold text-primary">Total débité</Text>
-                            <Text className="text-xl font-bold text-primary">
-                                {(amount + fees).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
+                            <Text className={clsx("text-xl font-bold", totalDeducted > balance ? "text-red-500" : "text-primary")}>
+                                {totalDeducted.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
                             </Text>
                         </View>
+                        {totalDeducted > balance && (
+                            <Text className="text-red-500 text-xs mt-2 text-right">Solde insuffisant</Text>
+                        )}
                     </View>
 
                     {/* Spacer */}
@@ -89,13 +120,23 @@ export default function RetraitBanqueScreen() {
 
                     {/* Confirm Button */}
                     <TouchableOpacity
-                        onPress={() => router.push("/retrait-banque/succes")}
-                        className="mb-6 flex-row w-full items-center justify-center gap-2 rounded-full bg-primary py-4 active:scale-95 transition-transform shadow-lg shadow-primary/20"
+                        onPress={handleWithdraw}
+                        disabled={!isValid || isLoading}
+                        className={clsx(
+                            "mb-6 flex-row w-full items-center justify-center gap-2 rounded-full py-4 transition-transform shadow-lg",
+                            isValid ? "bg-primary shadow-primary/20 active:scale-95" : "bg-gray-300 dark:bg-gray-700 opacity-70"
+                        )}
                     >
-                        <Text className="text-base font-bold text-primary-foreground text-white">
-                            Confirmer le retrait
-                        </Text>
-                        <ArrowRight size={20} color="white" />
+                        {isLoading ? (
+                            <ActivityIndicator color="white" />
+                        ) : (
+                            <>
+                                <Text className="text-base font-bold text-primary-foreground text-white">
+                                    Confirmer le retrait
+                                </Text>
+                                <ArrowRight size={20} color="white" />
+                            </>
+                        )}
                     </TouchableOpacity>
 
                     {/* Security Footer */}

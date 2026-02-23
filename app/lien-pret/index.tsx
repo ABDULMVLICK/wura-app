@@ -1,15 +1,14 @@
-import { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Clipboard from "expo-clipboard";
-import { Copy, Check, Link as LinkIcon, CheckCircle2 } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { Check, Copy, Link as LinkIcon } from "lucide-react-native";
+import { useState } from "react";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const GENERATED_LINK = "wura.app/send/jean-1x8k...";
 
 export default function LienPretScreen() {
     const router = useRouter();
-    const params = useLocalSearchParams();
-    const { amount } = params;
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
@@ -111,7 +110,7 @@ export default function LienPretScreen() {
 
                     {/* Return link -> Changed to "Terminer" redirecting to Success */}
                     <TouchableOpacity
-                        onPress={() => router.push({ pathname: "/sender-home/transfert-reussi", params: { amount } })}
+                        onPress={() => router.push("/sender-home/transfert-reussi")}
                         className="mb-10 p-4 w-full items-center justify-center rounded-2xl border-2 border-[#F59E0B]"
                     >
                         <Text className="text-sm font-bold tracking-widest text-[#F59E0B] uppercase">

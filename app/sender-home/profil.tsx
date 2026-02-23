@@ -1,12 +1,15 @@
 import { useRouter } from "expo-router";
 import { ArrowLeft, Bell, Edit2, FileText, HelpCircle, LogOut, Moon, Shield, Sun, User } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import { Image, SafeAreaView, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
+import {  Image,  ScrollView, Switch, Text, TouchableOpacity, View  } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function SenderProfileScreen() {
     const router = useRouter();
     const { colorScheme, toggleColorScheme } = useColorScheme();
     const isDark = colorScheme === "dark";
+    const { signOut, profile } = useAuth();
 
     const menuItems = [
         {
@@ -41,9 +44,13 @@ export default function SenderProfileScreen() {
         }
     ];
 
-    const handleLogout = () => {
-        // Implement actual logout logic here
-        router.replace("/choix");
+    const handleLogout = async () => {
+        try {
+            await signOut();
+            router.replace("/choix");
+        } catch (error) {
+            console.error("Erreur déconnexion:", error);
+        }
     };
 
     return (
@@ -79,8 +86,12 @@ export default function SenderProfileScreen() {
                                 <Edit2 size={14} color="white" />
                             </TouchableOpacity>
                         </View>
-                        <Text className="text-xl font-bold text-gray-900 dark:text-white">Moussa Koné</Text>
-                        <Text className="text-sm text-gray-500 dark:text-gray-400">+223 70 12 34 56</Text>
+                        <Text className="text-xl font-bold text-gray-900 dark:text-white">
+                            {profile?.prenom} {profile?.nom}
+                        </Text>
+                        <Text className="text-sm text-gray-500 dark:text-gray-400">
+                            {profile?.telephone || profile?.email}
+                        </Text>
                         <View className="mt-2 px-3 py-1 rounded-full bg-[#ecfdf5] dark:bg-[#064E3B]/20 border border-[#10b981]/20">
                             <Text className="text-xs font-medium text-[#059669] dark:text-[#34d399]">Compte Vérifié</Text>
                         </View>

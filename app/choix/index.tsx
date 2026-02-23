@@ -1,7 +1,8 @@
 import { useRouter } from "expo-router";
 import { ArrowRight, Download, Send } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import { Image, SafeAreaView, Text, TouchableOpacity, View } from "react-native";
+import {  Image,  Text, TouchableOpacity, View  } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ChoiceScreen() {
     const router = useRouter();

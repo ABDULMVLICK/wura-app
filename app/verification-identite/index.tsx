@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView } from "react-native";
+import {  View, Text, TouchableOpacity, ScrollView } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ShieldCheck, Clock, CheckCircle2, ArrowRight, CloudUpload } from "lucide-react-native";
 import { clsx } from "clsx";

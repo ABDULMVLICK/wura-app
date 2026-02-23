@@ -1,17 +1,15 @@
-import { View, Text, TouchableOpacity, SafeAreaView, ScrollView } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, ArrowRight, Check } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { ArrowRight, ChevronLeft } from "lucide-react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTransfer } from "../../contexts/TransferContext";
 
 export default function ConfirmationAmountScreen() {
     const router = useRouter();
-    const { amount } = useLocalSearchParams();
+    const { state, getEstimatedEUR, getFeesXOF, getTotalXOF } = useTransfer();
 
-    // Default to 50000 if not provided, just for safety or dev testing
-    const displayAmount = amount ? amount.toString() : "50000";
-
-    // Calculate approximate Euro value (Example rate: 1 EUR = 655.95 FCFA)
-    const numericAmount = parseInt(displayAmount.replace(/\s/g, ''), 10) || 0;
-    const euroAmount = (numericAmount / 655.95).toFixed(2); // Mock value for display
+    const numericAmount = parseInt(state.amountXOF.replace(/\s/g, ''), 10) || 0;
+    const euroAmount = getEstimatedEUR() || "0.00";
 
     const handleConfirm = () => {
         // Navigate to Recipient Search (which allows selecting or adding beneficiary)
@@ -57,11 +55,11 @@ export default function ConfirmationAmountScreen() {
                     <View className="mt-12 w-full bg-slate-50 dark:bg-white/5 rounded-2xl p-6 space-y-4">
                         <View className="flex-row justify-between items-center pb-4 border-b border-slate-100 dark:border-white/10">
                             <Text className="text-slate-500 dark:text-slate-400">Frais de transfert</Text>
-                            <Text className="font-bold text-slate-900 dark:text-white">0 FCFA</Text>
+                            <Text className="font-bold text-slate-900 dark:text-white">{getFeesXOF()} FCFA</Text>
                         </View>
                         <View className="flex-row justify-between items-center pb-4 border-b border-slate-100 dark:border-white/10">
                             <Text className="text-slate-500 dark:text-slate-400">Total à payer</Text>
-                            <Text className="font-bold text-slate-900 dark:text-white">{Number(numericAmount).toLocaleString('fr-FR')} FCFA</Text>
+                            <Text className="font-bold text-slate-900 dark:text-white">{Number(getTotalXOF()).toLocaleString('fr-FR')} FCFA</Text>
                         </View>
                         <View className="flex-row justify-between items-center">
                             <Text className="text-slate-500 dark:text-slate-400">Taux de change</Text>

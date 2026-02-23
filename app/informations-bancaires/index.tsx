@@ -1,7 +1,8 @@
 import { useRouter } from "expo-router";
 import { ArrowRight, Building2, CreditCard, Lock, User, Wallet } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import { Image, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {  Image,  ScrollView, Text, TextInput, TouchableOpacity, View  } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Rect } from "react-native-svg";
 
 export default function BankInfoScreen() {

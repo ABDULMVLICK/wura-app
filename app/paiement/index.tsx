@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, ShieldCheck, ArrowRight } from "lucide-react-native";
 import { clsx } from "clsx";
+import { useRouter } from "expo-router";
+import { ArrowRight, ChevronLeft, ShieldCheck } from "lucide-react-native";
+import { useState } from "react";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTransfer } from "../../contexts/TransferContext";
 
 interface PaymentMethod {
     id: string;
@@ -67,15 +69,47 @@ function formatAmount(value: number): string {
     return value.toLocaleString("fr-FR").replace(/,/g, ".");
 }
 
+import { TransferService } from "../../services/transfers";
+
+// ... (keep PAYMENT_METHODS and formatAmount)
+
 export default function PaiementScreen() {
     const router = useRouter();
-    const params = useLocalSearchParams();
+    const { state, getTotalXOF, getEstimatedEUR, setPaymentMethod } = useTransfer();
     const [selected, setSelected] = useState("mtn");
+    const [loading, setLoading] = useState(false);
 
-    const amountParam = params.amount;
-    // Handle string | string[] from search params
-    const rawAmount = Array.isArray(amountParam) ? amountParam[0] : amountParam;
-    const amount = rawAmount ? parseInt(rawAmount, 10) : 12500;
+    const amount = parseInt(getTotalXOF(), 10) || 0;
+
+    const handlePayment = async () => {
+        const method = PAYMENT_METHODS.find(m => m.id === selected);
+        if (!method || !state.recipient) return;
+
+        setPaymentMethod({
+            id: method.id,
+            type: 'MOBILE_MONEY',
+            provider: method.shortName
+        });
+
+        setLoading(true);
+        try {
+            // Création de la transaction en base de données (Statut INITIATED)
+            const tx = await TransferService.createTransaction({
+                amountFCFA: amount,
+                amountEUR: Number(getEstimatedEUR()),
+                recipient: state.recipient,
+                paymentMethodId: method.id
+            });
+
+            // On navigue vers la page de suivi/succès en passant l'ID pour le polling
+            router.push({ pathname: "/sender-home/transfert-reussi", params: { transactionId: tx.id } });
+        } catch (error) {
+            console.error("Erreur lors de l'initiation de la transaction:", error);
+            // Gérer l'erreur (ex: Toast ou Alert)
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <SafeAreaView className="flex-1 bg-background">
@@ -174,15 +208,16 @@ export default function PaiementScreen() {
                         </Text>
                     </View>
 
-                    {/* CTA */}
                     <TouchableOpacity
-                        onPress={() => router.push({ pathname: "/lien-pret", params: { amount } })}
+                        onPress={handlePayment}
+                        disabled={loading}
                         className="w-full bg-[#064E3B] py-4 rounded-2xl shadow-lg shadow-emerald-900/10 flex-row items-center justify-center gap-2 active:scale-[0.98]"
+                        style={loading ? { opacity: 0.7 } : {}}
                     >
                         <Text className="text-base font-semibold text-white">
-                            Confirmer et Payer
+                            {loading ? "Création en cours..." : "Confirmer et Payer"}
                         </Text>
-                        <ArrowRight size={20} color="white" />
+                        {!loading && <ArrowRight size={20} color="white" />}
                     </TouchableOpacity>
                 </View>
             </View>

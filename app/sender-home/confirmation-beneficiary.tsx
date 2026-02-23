@@ -1,42 +1,34 @@
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Image } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, MoreHorizontal, ShieldCheck, Globe, User, Hash, QrCode, Landmark, ArrowRight, SignalHigh, Wifi, BatteryFull } from "lucide-react-native";
-import { clsx } from "clsx";
+import { useRouter } from "expo-router";
+import { ArrowRight, ChevronLeft, Globe, Hash, Landmark, MoreHorizontal, QrCode, ShieldCheck, User } from "lucide-react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTransfer } from "../../contexts/TransferContext";
 
 export default function ConfirmationBeneficiaryScreen() {
     const router = useRouter();
-    const params = useLocalSearchParams();
+    const { state } = useTransfer();
 
-    // Destructure params with fallbacks
-    const {
-        nom = "Koffi",
-        prenom = "Kouamé",
-        iban = "CI65 **** **** **** 9821",
-        bic = "ECOB CI AB",
-        banque = "Ecobank Côte d'Ivoire",
-        pays = "Côte d'Ivoire",
-        amount
-    } = params;
+    // Destructure params with fallbacks if context is empty (direct dev navigation)
+    const recipient = state.recipient || {
+        nom: "Koffi",
+        prenom: "Kouamé",
+        iban: "CI65 **** **** **** 9821",
+        bic: "ECOB CI AB",
+        banque: "Ecobank Côte d'Ivoire",
+        pays: "France"
+    };
 
+    const { nom, prenom, iban, bic, banque, pays } = recipient;
     const fullName = `${prenom} ${nom}`;
 
     const handleConfirm = () => {
-        // Proceed to Payment selection with the amount
-        router.push({ pathname: "/paiement", params: { amount } });
+        // Proceed to Payment selection
+        router.push("/paiement");
     };
 
     return (
         <SafeAreaView className="flex-1 bg-[#f8f7f5] dark:bg-[#221b10]">
             <View className="flex-1">
-                {/* Status Bar Placeholder (iOS style mockup from HTML, visual only) */}
-                <View className="flex-row items-center justify-between px-6 pt-2 pb-2">
-                    <Text className="text-xs font-semibold dark:text-gray-300">9:41</Text>
-                    <View className="flex-row space-x-1 gap-1">
-                        <SignalHigh size={14} className="text-black dark:text-gray-300" color="currentColor" />
-                        <Wifi size={14} className="text-black dark:text-gray-300" color="currentColor" />
-                        <BatteryFull size={14} className="text-black dark:text-gray-300" color="currentColor" />
-                    </View>
-                </View>
 
                 {/* Navigation Header */}
                 <View className="px-6 py-2 flex-row items-center justify-between">

@@ -1,9 +1,14 @@
+import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import { signInWithPhoneNumber } from "@react-native-firebase/auth";
 import { Link, useRouter } from "expo-router";
 import { ArrowLeft, ArrowRight, Phone, User } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { useState } from "react";
-import { Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { FormField } from "../../components/FormField";
+import { auth } from "../../lib/firebase";
+import { AuthService } from "../../services/auth";
 
 export default function SenderSignupScreen() {
     const router = useRouter();
@@ -12,10 +17,65 @@ export default function SenderSignupScreen() {
     const [nom, setNom] = useState("");
     const [prenom, setPrenom] = useState("");
     const [telephone, setTelephone] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [step, setStep] = useState<"form" | "otp">("form");
+    const [confirmation, setConfirmation] = useState<FirebaseAuthTypes.ConfirmationResult | null>(null);
+    const [otp, setOtp] = useState("");
 
-    const handleSignup = () => {
-        // Mock signup — navigate to sender home
-        router.replace("/sender-home");
+    const handleSendCode = async () => {
+        if (!nom.trim() || !prenom.trim() || !telephone.trim()) {
+            Alert.alert("Erreur", "Veuillez remplir tous les champs.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Envoie un vrai SMS OTP via Firebase
+            const confirm = await signInWithPhoneNumber(auth, telephone);
+            setConfirmation(confirm);
+            setStep("otp");
+        } catch (error: any) {
+            console.error("Erreur envoi SMS:", error);
+            Alert.alert(
+                "Erreur",
+                error?.message || "Impossible d'envoyer le code. Vérifiez le numéro de téléphone."
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerifyOtp = async () => {
+        if (!confirmation) return;
+        if (!otp.trim() || otp.length < 4) {
+            Alert.alert("Erreur", "Veuillez entrer le code de vérification.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Vérifie le code OTP
+            const userCredential = await confirmation.confirm(otp);
+            const user = userCredential?.user;
+
+            if (user) {
+                // Crée le profil dans PostgreSQL (NestJS)
+                await AuthService.registerSender({
+                    firstName: prenom,
+                    lastName: nom,
+                    country: "CIV", // Par défaut ou à rajouter dans le form
+                });
+                // La redirection est gérée par AuthContext dans _layout.tsx
+            }
+        } catch (error: any) {
+            console.error("Erreur vérification OTP:", error);
+            Alert.alert(
+                "Code invalide",
+                "Le code de vérification est incorrect. Veuillez réessayer."
+            );
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -29,7 +89,14 @@ export default function SenderSignupScreen() {
                         <View className="w-full max-w-md flex-col gap-3 rounded-3xl bg-muted px-6 py-4">
                             {/* Back button */}
                             <TouchableOpacity
-                                onPress={() => router.back()}
+                                onPress={() => {
+                                    if (step === "otp") {
+                                        setStep("form");
+                                        setOtp("");
+                                    } else {
+                                        router.back();
+                                    }
+                                }}
                                 className="flex-row items-center gap-2"
                             >
                                 <ArrowLeft size={20} color="#6b7280" />
@@ -44,83 +111,114 @@ export default function SenderSignupScreen() {
                                     resizeMode="contain"
                                 />
                                 <Text className="text-sm text-muted-foreground text-center">
-                                    Créez votre compte pour envoyer de l'argent
+                                    {step === "form"
+                                        ? "Créez votre compte pour envoyer de l'argent"
+                                        : `Entrez le code envoyé au ${telephone}`
+                                    }
                                 </Text>
                             </View>
 
-                            {/* Form */}
-                            <View>
-                                <FormField
-                                    label="Nom"
-                                    icon={<User size={20} color="#f59e0b" />}
-                                    placeholder="Dupont"
-                                    value={nom}
-                                    onChangeText={setNom}
-                                    autoCapitalize="words"
-                                />
-
-                                <FormField
-                                    label="Prénom"
-                                    icon={<User size={20} color="#f59e0b" />}
-                                    placeholder="Jean"
-                                    value={prenom}
-                                    onChangeText={setPrenom}
-                                    autoCapitalize="words"
-                                />
-
-                                <FormField
-                                    label="Numéro de téléphone"
-                                    icon={<Phone size={20} color="#f59e0b" />}
-                                    placeholder="+225 XX XX XX XX"
-                                    keyboardType="phone-pad"
-                                    value={telephone}
-                                    onChangeText={setTelephone}
-                                />
-
-                                <TouchableOpacity
-                                    onPress={handleSignup}
-                                    className="mt-4 flex-row w-full items-center justify-center gap-3 rounded-2xl bg-[#064E3B] px-6 py-4 active:opacity-80"
-                                >
-                                    <Text className="text-base font-semibold text-white">
-                                        Créer mon compte
-                                    </Text>
-                                    <ArrowRight size={20} color="white" />
-                                </TouchableOpacity>
-
-                                {/* Separator */}
-                                <View className="my-6 flex-row items-center gap-4">
-                                    <View className="h-[1px] flex-1 bg-border/50" />
-                                    <Text className="text-xs text-muted-foreground uppercase">Ou continuer avec</Text>
-                                    <View className="h-[1px] flex-1 bg-border/50" />
-                                </View>
-
-                                {/* Google Sign-In Button */}
-                                <TouchableOpacity
-                                    className="flex-row w-full items-center justify-center gap-3 rounded-2xl bg-white border border-gray-200 px-6 py-4 active:opacity-80 shadow-sm"
-                                >
-                                    <Image
-                                        source={{ uri: "https://developers.google.com/identity/images/g-logo.png" }}
-                                        className="w-5 h-5"
-                                        resizeMode="contain"
+                            {step === "form" ? (
+                                /* Registration Form */
+                                <View>
+                                    <FormField
+                                        label="Nom"
+                                        icon={<User size={20} color="#f59e0b" />}
+                                        placeholder="Dupont"
+                                        value={nom}
+                                        onChangeText={setNom}
+                                        autoCapitalize="words"
                                     />
-                                    <Text className="text-base font-semibold text-gray-700">
-                                        Google
-                                    </Text>
-                                </TouchableOpacity>
 
-                                <View className="mt-6 flex-row justify-center gap-1">
-                                    <Text className="text-sm text-muted-foreground">
-                                        Vous avez déjà un compte ?
-                                    </Text>
-                                    <Link href="/connexion-sender" asChild>
-                                        <TouchableOpacity>
-                                            <Text className="text-sm font-semibold text-foreground underline">
-                                                Se connecter
-                                            </Text>
-                                        </TouchableOpacity>
-                                    </Link>
+                                    <FormField
+                                        label="Prénom"
+                                        icon={<User size={20} color="#f59e0b" />}
+                                        placeholder="Jean"
+                                        value={prenom}
+                                        onChangeText={setPrenom}
+                                        autoCapitalize="words"
+                                    />
+
+                                    <FormField
+                                        label="Numéro de téléphone"
+                                        icon={<Phone size={20} color="#f59e0b" />}
+                                        placeholder="+225 XX XX XX XX"
+                                        keyboardType="phone-pad"
+                                        value={telephone}
+                                        onChangeText={setTelephone}
+                                    />
+
+                                    <TouchableOpacity
+                                        onPress={handleSendCode}
+                                        disabled={loading}
+                                        className="mt-4 flex-row w-full items-center justify-center gap-3 rounded-2xl bg-[#064E3B] px-6 py-4 active:opacity-80"
+                                        style={loading ? { opacity: 0.6 } : {}}
+                                    >
+                                        {loading ? (
+                                            <ActivityIndicator color="white" />
+                                        ) : (
+                                            <>
+                                                <Text className="text-base font-semibold text-white">
+                                                    Créer mon compte
+                                                </Text>
+                                                <ArrowRight size={20} color="white" />
+                                            </>
+                                        )}
+                                    </TouchableOpacity>
+
+                                    <View className="mt-6 flex-row justify-center gap-1">
+                                        <Text className="text-sm text-muted-foreground">
+                                            Vous avez déjà un compte ?
+                                        </Text>
+                                        <Link href="/connexion-sender" asChild>
+                                            <TouchableOpacity>
+                                                <Text className="text-sm font-semibold text-foreground underline">
+                                                    Se connecter
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </Link>
+                                    </View>
                                 </View>
-                            </View>
+                            ) : (
+                                /* OTP Verification Step */
+                                <View>
+                                    <FormField
+                                        label="Code de vérification"
+                                        icon={<Phone size={20} color="#f59e0b" />}
+                                        placeholder="123456"
+                                        keyboardType="number-pad"
+                                        value={otp}
+                                        onChangeText={setOtp}
+                                    />
+
+                                    <TouchableOpacity
+                                        onPress={handleVerifyOtp}
+                                        disabled={loading}
+                                        className="mt-4 flex-row w-full items-center justify-center gap-3 rounded-2xl bg-[#064E3B] px-6 py-4 active:opacity-80"
+                                        style={loading ? { opacity: 0.6 } : {}}
+                                    >
+                                        {loading ? (
+                                            <ActivityIndicator color="white" />
+                                        ) : (
+                                            <>
+                                                <Text className="text-base font-semibold text-white">
+                                                    Vérifier et créer le compte
+                                                </Text>
+                                                <ArrowRight size={20} color="white" />
+                                            </>
+                                        )}
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={handleSendCode}
+                                        className="mt-4 items-center"
+                                    >
+                                        <Text className="text-sm font-medium text-[#064E3B]">
+                                            Renvoyer le code
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
                         </View>
                     </View>
                 </ScrollView>

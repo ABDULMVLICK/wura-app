@@ -1,27 +1,77 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import { signInWithPhoneNumber } from "@react-native-firebase/auth";
 import { Link, useRouter } from "expo-router";
 import { ArrowLeft, ArrowRight, Phone, ShieldCheck } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { useRef, useState } from "react";
-import { Image, KeyboardAvoidingView, Platform, SafeAreaView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Controller, useForm } from "react-hook-form";
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import * as z from "zod";
 import { FormField } from "../../components/FormField";
+import { auth } from "../../lib/firebase";
+
+const phoneSchema = z.object({
+    telephone: z.string().min(8, "Le numéro de téléphone est trop court").regex(/^\+?[0-9\s-]+$/, "Le numéro de téléphone est invalide"),
+});
+type PhoneFormValues = z.infer<typeof phoneSchema>;
 
 export default function SenderLoginScreen() {
     const router = useRouter();
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === "dark";
     const [step, setStep] = useState<"phone" | "otp">("phone");
-    const [telephone, setTelephone] = useState("");
-    const [otp, setOtp] = useState(["", "", "", ""]);
+    const { control, handleSubmit, formState: { errors }, watch } = useForm<PhoneFormValues>({
+        resolver: zodResolver(phoneSchema),
+        defaultValues: { telephone: "" }
+    });
+    const telephone = watch("telephone");
+
+    const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+    const [loading, setLoading] = useState(false);
+    const [confirmation, setConfirmation] = useState<FirebaseAuthTypes.ConfirmationResult | null>(null);
     const otpRefs = useRef<(TextInput | null)[]>([]);
 
-    const handleSendCode = () => {
-        // Mock sending OTP code
-        setStep("otp");
+    const onSubmitPhone = async (data: PhoneFormValues) => {
+        setLoading(true);
+        try {
+            const confirm = await signInWithPhoneNumber(auth, data.telephone);
+            setConfirmation(confirm);
+            setStep("otp");
+        } catch (error: any) {
+            console.error("Erreur envoi SMS:", error);
+            Alert.alert(
+                "Erreur",
+                error?.message || "Impossible d'envoyer le code. Vérifiez votre numéro."
+            );
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleVerifyOtp = () => {
-        // Mock OTP verification — navigate to sender home
-        router.replace("/sender-home");
+    const handleVerifyOtp = async (autoCode?: string) => {
+        if (!confirmation) return;
+
+        const code = autoCode || otp.join("");
+        if (code.length < 6) {
+            Alert.alert("Erreur", "Veuillez entrer le code complet.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await confirmation.confirm(code);
+            // La redirection est gérée automatiquement par AuthContext dans _layout.tsx
+        } catch (error: any) {
+            console.error("Erreur vérification OTP:", error);
+            Alert.alert(
+                "Code invalide",
+                "Le code de vérification est incorrect. Veuillez réessayer."
+            );
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleOtpChange = (text: string, index: number) => {
@@ -30,13 +80,16 @@ export default function SenderLoginScreen() {
         setOtp(newOtp);
 
         // Auto-focus next input
-        if (text && index < 3) {
+        if (text && index < 5) {
             otpRefs.current[index + 1]?.focus();
         }
 
         // Auto-submit when all filled
-        if (index === 3 && text) {
-            setTimeout(() => handleVerifyOtp(), 300);
+        if (index === 5 && text) {
+            const codeArray = [...newOtp];
+            if (codeArray.every(d => d !== "")) {
+                setTimeout(() => handleVerifyOtp(codeArray.join("")), 300);
+            }
         }
     };
 
@@ -59,7 +112,7 @@ export default function SenderLoginScreen() {
                             onPress={() => {
                                 if (step === "otp") {
                                     setStep("phone");
-                                    setOtp(["", "", "", ""]);
+                                    setOtp(["", "", "", "", "", ""]);
                                 } else {
                                     router.back();
                                 }
@@ -88,44 +141,40 @@ export default function SenderLoginScreen() {
                         {step === "phone" ? (
                             /* Phone Input Step */
                             <View>
-                                <FormField
-                                    label="Numéro de téléphone"
-                                    icon={<Phone size={20} color="#f59e0b" />}
-                                    placeholder="+225 XX XX XX XX"
-                                    keyboardType="phone-pad"
-                                    value={telephone}
-                                    onChangeText={setTelephone}
+                                <Controller
+                                    control={control}
+                                    name="telephone"
+                                    render={({ field: { onChange, value } }) => (
+                                        <View>
+                                            <FormField
+                                                label="Numéro de téléphone"
+                                                icon={<Phone size={20} color="#f59e0b" />}
+                                                placeholder="+225 XX XX XX XX"
+                                                keyboardType="phone-pad"
+                                                value={value}
+                                                onChangeText={onChange}
+                                            />
+                                            {errors.telephone && <Text className="text-red-500 text-xs mt-1 ml-1">{errors.telephone.message}</Text>}
+                                        </View>
+                                    )}
                                 />
 
                                 <TouchableOpacity
-                                    onPress={handleSendCode}
+                                    onPress={handleSubmit(onSubmitPhone)}
+                                    disabled={loading}
                                     className="mt-4 flex-row w-full items-center justify-center gap-3 rounded-2xl bg-[#064E3B] px-6 py-4 active:opacity-80"
+                                    style={loading ? { opacity: 0.6 } : {}}
                                 >
-                                    <Text className="text-base font-semibold text-white">
-                                        Recevoir le code
-                                    </Text>
-                                    <ArrowRight size={20} color="white" />
-                                </TouchableOpacity>
-
-                                {/* Separator */}
-                                <View className="my-6 flex-row items-center gap-4">
-                                    <View className="h-[1px] flex-1 bg-gray-200" />
-                                    <Text className="text-xs text-muted-foreground uppercase">Ou continuer avec</Text>
-                                    <View className="h-[1px] flex-1 bg-gray-200" />
-                                </View>
-
-                                {/* Google Sign-In Button */}
-                                <TouchableOpacity
-                                    className="flex-row w-full items-center justify-center gap-3 rounded-2xl bg-white border border-gray-200 px-6 py-4 active:opacity-80 shadow-sm"
-                                >
-                                    <Image
-                                        source={{ uri: "https://developers.google.com/identity/images/g-logo.png" }}
-                                        className="w-5 h-5"
-                                        resizeMode="contain"
-                                    />
-                                    <Text className="text-base font-semibold text-gray-700">
-                                        Google
-                                    </Text>
+                                    {loading ? (
+                                        <ActivityIndicator color="white" />
+                                    ) : (
+                                        <>
+                                            <Text className="text-base font-semibold text-white">
+                                                Recevoir le code
+                                            </Text>
+                                            <ArrowRight size={20} color="white" />
+                                        </>
+                                    )}
                                 </TouchableOpacity>
 
                                 <View className="mt-6 flex-row justify-center gap-1">
@@ -153,8 +202,8 @@ export default function SenderLoginScreen() {
                                     <Text className="font-bold text-foreground">{telephone}</Text>
                                 </Text>
 
-                                {/* OTP Input */}
-                                <View className="flex-row gap-3 justify-center">
+                                {/* OTP Input (6 digits for Firebase) */}
+                                <View className="flex-row gap-2 justify-center">
                                     {otp.map((digit, index) => (
                                         <TextInput
                                             key={index}
@@ -164,7 +213,7 @@ export default function SenderLoginScreen() {
                                             onKeyPress={({ nativeEvent }) => handleOtpKeyPress(nativeEvent.key, index)}
                                             keyboardType="number-pad"
                                             maxLength={1}
-                                            className="w-14 h-16 rounded-2xl border-2 border-border bg-card text-center text-2xl font-bold text-foreground"
+                                            className="w-12 h-14 rounded-2xl border-2 border-border bg-card text-center text-2xl font-bold text-foreground"
                                             selectionColor="#F59E0B"
                                             autoFocus={index === 0}
                                         />
@@ -172,16 +221,24 @@ export default function SenderLoginScreen() {
                                 </View>
 
                                 <TouchableOpacity
-                                    onPress={handleVerifyOtp}
+                                    onPress={() => handleVerifyOtp()}
+                                    disabled={loading}
                                     className="flex-row w-full items-center justify-center gap-3 rounded-2xl bg-[#064E3B] px-6 py-4 active:opacity-80"
+                                    style={loading ? { opacity: 0.6 } : {}}
                                 >
-                                    <Text className="text-base font-semibold text-white">
-                                        Vérifier
-                                    </Text>
-                                    <ArrowRight size={20} color="white" />
+                                    {loading ? (
+                                        <ActivityIndicator color="white" />
+                                    ) : (
+                                        <>
+                                            <Text className="text-base font-semibold text-white">
+                                                Vérifier
+                                            </Text>
+                                            <ArrowRight size={20} color="white" />
+                                        </>
+                                    )}
                                 </TouchableOpacity>
 
-                                <TouchableOpacity onPress={handleSendCode}>
+                                <TouchableOpacity onPress={handleSubmit(onSubmitPhone)}>
                                     <Text className="text-sm font-medium text-[#064E3B]">
                                         Renvoyer le code
                                     </Text>

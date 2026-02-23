@@ -1,7 +1,9 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, SafeAreaView, Image } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, QrCode, Search, ChevronRight, Plus, ChevronRight as ChevronRightIcon } from "lucide-react-native";
 import { clsx } from "clsx";
+import { useRouter } from "expo-router";
+import { ChevronLeft, ChevronRight, ChevronRight as ChevronRightIcon, Plus, QrCode, Search } from "lucide-react-native";
+import { Image, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTransfer } from "../../contexts/TransferContext";
 
 // Mock Data for Recipients
 const RECIPIENTS = [
@@ -14,12 +16,26 @@ const RECIPIENTS = [
 
 export default function RecipientSearchScreen() {
     const router = useRouter();
-
-    const { amount } = useLocalSearchParams();
+    const { setRecipient } = useTransfer();
 
     const handleSelectRecipient = (recipient: any) => {
-        // Proceed to Payment selection with the amount
-        router.push({ pathname: "/paiement", params: { amount } });
+        // Parse mock name
+        const names = recipient.name.split(' ');
+        const nom = names.pop() || "";
+        const prenom = names.join(' ');
+
+        // Save selected recipient into global state
+        setRecipient({
+            id: recipient.id,
+            nom: nom,
+            prenom: prenom,
+            iban: "FR76 **** **** **** 8821", // Mocked for existing contacts
+            bic: "BNPA FR PP",
+            banque: "BNP Paribas",
+            pays: "France"
+        });
+        // Proceed to Beneficiary Confirmation
+        router.push("/sender-home/confirmation-beneficiary");
     };
 
     return (
@@ -61,7 +77,7 @@ export default function RecipientSearchScreen() {
 
                 {/* New Recipient Action */}
                 <TouchableOpacity
-                    onPress={() => router.push({ pathname: "/sender-home/add-beneficiary", params: { amount } })}
+                    onPress={() => router.push("/sender-home/add-beneficiary")}
                     className="w-full mb-8 flex-row items-center p-4 bg-white dark:bg-[#2d2c1b] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 active:scale-[0.98]"
                 >
                     <View className="h-12 w-12 rounded-full bg-[#f9f506] flex items-center justify-center shadow-sm">

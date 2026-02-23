@@ -1,13 +1,16 @@
 import { useRouter } from "expo-router";
 import { Bell, ChevronRight, CreditCard, Edit2, LogOut, Moon, Settings, Shield, Sun, User } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import { Image, SafeAreaView, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
+import {  Image,  ScrollView, Switch, Text, TouchableOpacity, View  } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomTabBar } from "../../components/BottomTabBar";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function ProfileScreen() {
     const router = useRouter();
     const { colorScheme, toggleColorScheme } = useColorScheme();
     const isDark = colorScheme === "dark";
+    const { signOut, profile } = useAuth();
 
     const menuItems = [
         {
@@ -42,17 +45,21 @@ export default function ProfileScreen() {
         }
     ];
 
-    const handleLogout = () => {
-        // Implement actual logout logic here (clear tokens, etc.)
-        router.replace("/choix");
+    const handleLogout = async () => {
+        try {
+            await signOut();
+            router.replace("/choix");
+        } catch (error) {
+            console.error("Erreur déconnexion:", error);
+        }
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
+        <SafeAreaView className="flex-1 bg-background dark:bg-slate-950">
             <View className="flex-1">
                 <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
                     <View className="px-6 pt-8 pb-4">
-                        <Text className="text-3xl font-bold text-foreground mb-6">Mon Profil</Text>
+                        <Text className="text-3xl font-bold text-foreground dark:text-white mb-6">Mon Profil</Text>
 
                         {/* Profile Card */}
                         <View className="items-center mb-8">
@@ -71,15 +78,19 @@ export default function ProfileScreen() {
                                     <Edit2 size={14} color="white" />
                                 </TouchableOpacity>
                             </View>
-                            <Text className="text-xl font-bold text-foreground">Jean Dupont</Text>
-                            <Text className="text-sm text-muted-foreground">jean.dupont@example.com</Text>
+                            <Text className="text-xl font-bold text-foreground dark:text-white">
+                                {profile?.prenom} {profile?.nom}
+                            </Text>
+                            <Text className="text-sm text-muted-foreground dark:text-slate-400">
+                                {profile?.email || profile?.telephone}
+                            </Text>
                             <View className="mt-2 px-3 py-1 rounded-full bg-primary/10">
                                 <Text className="text-xs font-medium text-primary">Compte Vérifié</Text>
                             </View>
                         </View>
 
                         {/* Menu Items */}
-                        <View className="bg-card rounded-3xl p-2 shadow-sm border border-border mb-6">
+                        <View className="bg-card dark:bg-slate-900 rounded-3xl p-2 shadow-sm border border-border dark:border-slate-800 mb-6">
                             {menuItems.map((item, index) => (
                                 <TouchableOpacity
                                     key={index}
@@ -87,28 +98,28 @@ export default function ProfileScreen() {
                                     className={`flex-row items-center justify-between p-4 ${index !== menuItems.length - 1 ? 'border-b border-border/50' : ''}`}
                                 >
                                     <View className="flex-row items-center gap-4">
-                                        <View className={`h-10 w-10 rounded-xl items-center justify-center bg-gray-50 dark:bg-gray-800`}>
+                                        <View className={`h-10 w-10 rounded-xl items-center justify-center bg-gray-50 dark:bg-slate-800`}>
                                             <item.icon size={20} color={item.color} />
                                         </View>
-                                        <Text className="text-base font-medium text-foreground">{item.label}</Text>
+                                        <Text className="text-base font-medium text-foreground dark:text-white">{item.label}</Text>
                                     </View>
-                                    <ChevronRight size={20} className="text-muted-foreground opacity-50" />
+                                    <ChevronRight size={20} className="text-muted-foreground dark:text-slate-500 opacity-50" />
                                 </TouchableOpacity>
                             ))}
                         </View>
 
                         {/* Dark Mode Toggle */}
-                        <View className="bg-card rounded-3xl p-2 shadow-sm border border-border mb-6">
+                        <View className="bg-card dark:bg-slate-900 rounded-3xl p-2 shadow-sm border border-border dark:border-slate-800 mb-6">
                             <View className="flex-row items-center justify-between p-4">
                                 <View className="flex-row items-center gap-4">
-                                    <View className="h-10 w-10 rounded-xl items-center justify-center bg-gray-50 dark:bg-gray-800">
+                                    <View className="h-10 w-10 rounded-xl items-center justify-center bg-gray-50 dark:bg-slate-800">
                                         {isDark ? (
                                             <Moon size={20} color="#8B5CF6" />
                                         ) : (
                                             <Sun size={20} color="#F59E0B" />
                                         )}
                                     </View>
-                                    <Text className="text-base font-medium text-foreground">
+                                    <Text className="text-base font-medium text-foreground dark:text-white">
                                         Mode sombre
                                     </Text>
                                 </View>

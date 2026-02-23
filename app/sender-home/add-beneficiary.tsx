@@ -1,21 +1,38 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { clsx } from "clsx";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { ArrowRight, ChevronDown, ChevronLeft, Clipboard, Info, Landmark, MoreHorizontal } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { useState } from "react";
-import { Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Controller, useForm } from "react-hook-form";
+import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import * as z from "zod";
+import { CountrySelector, WESTERN_COUNTRIES } from "../../components/CountrySelector";
+import { useTransfer } from "../../contexts/TransferContext";
+
+const beneficiarySchema = z.object({
+    nom: z.string().min(2, "Le nom est trop court"),
+    prenom: z.string().min(2, "Le prénom est trop court"),
+    iban: z.string().min(14, "L'IBAN semble invalide").max(34, "L'IBAN semble invalide"),
+    bic: z.string().min(8, "Le BIC doit contenir 8 ou 11 caractères").max(11, "Le BIC doit contenir 8 ou 11 caractères"),
+    banque: z.string().min(2, "Le nom de la banque est requis"),
+});
+type BeneficiaryFormValues = z.infer<typeof beneficiarySchema>;
 
 // Reusable Floating Label Input Component
 const FloatingLabelInput = ({
     label,
     value,
     onChangeText,
+    onBlur: onInputBlur,
     placeholder,
     icon,
     rightIcon,
     onRightIconPress,
     autoCapitalize = "sentences",
-    keyboardType = "default"
+    keyboardType = "default",
+    error
 }: any) => {
     const [isFocused, setIsFocused] = useState(false);
     // Label floats if focused OR if there is a value
@@ -38,12 +55,16 @@ const FloatingLabelInput = ({
                     <TextInput
                         className={clsx(
                             "block w-full h-full bg-transparent border-none pt-5 pb-1 text-sm font-medium text-gray-900 dark:text-white leading-tight",
-                            icon ? "pl-2 px-4" : "px-4"
+                            icon ? "pl-2 px-4" : "px-4",
+                            error && "text-red-500"
                         )}
                         value={value}
                         onChangeText={onChangeText}
                         onFocus={() => setIsFocused(true)}
-                        onBlur={() => setIsFocused(false)}
+                        onBlur={() => {
+                            setIsFocused(false);
+                            if (onInputBlur) onInputBlur();
+                        }}
                         placeholder=""
                         autoCapitalize={autoCapitalize}
                         keyboardType={keyboardType}
@@ -66,41 +87,48 @@ const FloatingLabelInput = ({
                     </TouchableOpacity>
                 )}
             </View>
+            {error && <Text className="text-red-500 text-xs mt-1 ml-1">{error}</Text>}
         </View>
     );
 };
 
 export default function AddBeneficiaryScreen() {
     const router = useRouter();
-    const { amount } = useLocalSearchParams();
+    const { setRecipient } = useTransfer();
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === "dark";
-    const [formData, setFormData] = useState({
-        nom: "",
-        prenom: "",
-        iban: "",
-        bic: "",
-        banque: ""
+    const {
+        control,
+        handleSubmit,
+        formState: { errors }
+    } = useForm<BeneficiaryFormValues>({
+        resolver: zodResolver(beneficiarySchema),
+        defaultValues: {
+            nom: "",
+            prenom: "",
+            iban: "",
+            bic: "",
+            banque: ""
+        }
     });
 
-    const updateField = (field: string, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
+    const [isCountryModalVisible, setIsCountryModalVisible] = useState(false);
+    const [selectedCountry, setSelectedCountry] = useState(WESTERN_COUNTRIES[0]); // France
 
-    const handleVerify = () => {
-        // Navigate to Confirmation Beneficiary
-        router.push({
-            pathname: "/sender-home/confirmation-beneficiary",
-            params: {
-                nom: formData.nom,
-                prenom: formData.prenom,
-                iban: formData.iban,
-                bic: formData.bic,
-                banque: formData.banque,
-                pays: "France (FR)", // Hardcoded based on mock country select, typically dynamic
-                amount: amount // Pass amount forward
-            }
+    const onSubmit = (data: BeneficiaryFormValues) => {
+        // Save the new beneficiary in the global context
+        setRecipient({
+            id: `new-${Date.now()}`,
+            nom: data.nom,
+            prenom: data.prenom,
+            iban: data.iban,
+            bic: data.bic,
+            banque: data.banque,
+            pays: selectedCountry.name
         });
+
+        // Navigate to Confirmation Beneficiary
+        router.push("/sender-home/confirmation-beneficiary");
     };
 
     return (
@@ -140,68 +168,105 @@ export default function AddBeneficiaryScreen() {
                 <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
                     <View className="space-y-4 gap-4">
 
-                        {/* Country Select (Mock) */}
-                        <View className="bg-white dark:bg-white/10 rounded-xl shadow-sm flex-row items-center px-4 py-3 active:border-[#F59E0B]/30 border border-transparent">
+                        {/* Country Select */}
+                        <TouchableOpacity onPress={() => setIsCountryModalVisible(true)} className="bg-white dark:bg-white/10 rounded-xl shadow-sm flex-row items-center px-4 py-3 active:border-[#F59E0B]/30 border border-border">
                             <View className="mr-3">
-                                {/* Abstract Flag */}
-                                <View className="w-8 h-6 rounded bg-blue-600 flex-row overflow-hidden relative">
-                                    <View className="flex-1 bg-blue-600" />
-                                    <View className="flex-1 bg-white" />
-                                    <View className="flex-1 bg-red-600" />
-                                    <View className="absolute inset-0 bg-white/10" />
+                                {/* Dynamic Flag */}
+                                <View className="w-8 h-6 rounded flex-row overflow-hidden relative border border-gray-100 dark:border-white/10">
+                                    {selectedCountry.flag}
                                 </View>
                             </View>
                             <View className="flex-1">
                                 <Text className="text-xs text-gray-500 dark:text-gray-400">Pays de la banque</Text>
                                 <View className="flex-row items-center justify-between mt-0.5">
-                                    <Text className="text-sm font-medium text-gray-900 dark:text-white">France (FR)</Text>
+                                    <Text className="text-sm font-medium text-gray-900 dark:text-white">{selectedCountry.name}</Text>
                                 </View>
                             </View>
                             <ChevronDown size={24} className="text-[#F59E0B]" color="#F59E0B" />
-                        </View>
+                        </TouchableOpacity>
 
                         {/* Name Fields Row */}
                         <View className="flex-row gap-4">
                             <View className="flex-1">
-                                <FloatingLabelInput
-                                    label="Nom"
-                                    value={formData.nom}
-                                    onChangeText={(t: string) => updateField('nom', t)}
+                                <Controller
+                                    control={control}
+                                    name="nom"
+                                    render={({ field: { onChange, onBlur, value } }) => (
+                                        <FloatingLabelInput
+                                            label="Nom"
+                                            value={value}
+                                            onChangeText={onChange}
+                                            onBlur={onBlur}
+                                            error={errors.nom?.message}
+                                        />
+                                    )}
                                 />
                             </View>
                             <View className="flex-1">
-                                <FloatingLabelInput
-                                    label="Prénom"
-                                    value={formData.prenom}
-                                    onChangeText={(t: string) => updateField('prenom', t)}
+                                <Controller
+                                    control={control}
+                                    name="prenom"
+                                    render={({ field: { onChange, onBlur, value } }) => (
+                                        <FloatingLabelInput
+                                            label="Prénom"
+                                            value={value}
+                                            onChangeText={onChange}
+                                            onBlur={onBlur}
+                                            error={errors.prenom?.message}
+                                        />
+                                    )}
                                 />
                             </View>
                         </View>
 
                         {/* IBAN */}
-                        <FloatingLabelInput
-                            label="IBAN"
-                            value={formData.iban}
-                            onChangeText={(t: string) => updateField('iban', t)}
-                            autoCapitalize="characters"
-                            rightIcon={<Clipboard size={20} className="text-gray-400" color="#9ca3af" />}
-                            onRightIconPress={() => console.log('Paste IBAN')}
+                        <Controller
+                            control={control}
+                            name="iban"
+                            render={({ field: { onChange, onBlur, value } }) => (
+                                <FloatingLabelInput
+                                    label="IBAN"
+                                    value={value}
+                                    onChangeText={onChange}
+                                    onBlur={onBlur}
+                                    autoCapitalize="characters"
+                                    rightIcon={<Clipboard size={20} className="text-gray-400" color="#9ca3af" />}
+                                    onRightIconPress={() => console.log('Paste IBAN')}
+                                    error={errors.iban?.message}
+                                />
+                            )}
                         />
 
                         {/* BIC */}
-                        <FloatingLabelInput
-                            label="BIC / SWIFT"
-                            value={formData.bic}
-                            onChangeText={(t: string) => updateField('bic', t)}
-                            autoCapitalize="characters"
+                        <Controller
+                            control={control}
+                            name="bic"
+                            render={({ field: { onChange, onBlur, value } }) => (
+                                <FloatingLabelInput
+                                    label="BIC / SWIFT"
+                                    value={value}
+                                    onChangeText={onChange}
+                                    onBlur={onBlur}
+                                    autoCapitalize="characters"
+                                    error={errors.bic?.message}
+                                />
+                            )}
                         />
 
                         {/* Banque */}
-                        <FloatingLabelInput
-                            label="Nom de la banque"
-                            value={formData.banque}
-                            onChangeText={(t: string) => updateField('banque', t)}
-                            icon={<Landmark size={20} className="text-gray-400" color="#9ca3af" />}
+                        <Controller
+                            control={control}
+                            name="banque"
+                            render={({ field: { onChange, onBlur, value } }) => (
+                                <FloatingLabelInput
+                                    label="Nom de la banque"
+                                    value={value}
+                                    onChangeText={onChange}
+                                    onBlur={onBlur}
+                                    icon={<Landmark size={20} className="text-gray-400" color="#9ca3af" />}
+                                    error={errors.banque?.message}
+                                />
+                            )}
                         />
 
                         {/* Info Note */}
@@ -219,7 +284,7 @@ export default function AddBeneficiaryScreen() {
                 <View className="absolute bottom-0 left-0 right-0 p-6 bg-[#f8f7f5]/90 dark:bg-[#221b10]/95 pt-8 pb-8 z-50">
                     <View className="h-1 w-full bg-gradient-to-t from-background-light to-transparent absolute top-0" />
                     <TouchableOpacity
-                        onPress={handleVerify}
+                        onPress={handleSubmit(onSubmit)}
                         className="w-full bg-[#064E3B] py-4 rounded-xl shadow-lg shadow-emerald-900/20 flex-row items-center justify-center gap-2 active:scale-[0.98]"
                     >
                         <Text className="text-white font-medium text-lg">Vérifier</Text>
@@ -228,6 +293,13 @@ export default function AddBeneficiaryScreen() {
                 </View>
 
             </KeyboardAvoidingView>
+
+            <CountrySelector
+                visible={isCountryModalVisible}
+                onClose={() => setIsCountryModalVisible(false)}
+                onSelect={setSelectedCountry}
+                selectedCode={selectedCountry.code}
+            />
         </SafeAreaView>
     );
 }

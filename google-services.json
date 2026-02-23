@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "107069302242",
+    "project_id": "wura-9b09b",
+    "storage_bucket": "wura-9b09b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:107069302242:android:5f3ff50bd17269e7ab05bb",
+        "android_client_info": {
+          "package_name": "com.wura.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "107069302242-7gfurhktqt5etgs5u0241qsrbvcmcvce.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxScxJuUo4lJB-GKedcfTWv7kCNAbqonA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "107069302242-7gfurhktqt5etgs5u0241qsrbvcmcvce.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "107069302242-jcvddehcuprc88ab0lcb0admb52tmqko.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.wura.app"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:107069302242:android:6c61ea9951ebba6cab05bb",
+        "android_client_info": {
+          "package_name": "com.wura.native"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "107069302242-7gfurhktqt5etgs5u0241qsrbvcmcvce.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxScxJuUo4lJB-GKedcfTWv7kCNAbqonA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "107069302242-7gfurhktqt5etgs5u0241qsrbvcmcvce.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "107069302242-jcvddehcuprc88ab0lcb0admb52tmqko.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.wura.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,23 +1,42 @@
 import { useRouter } from "expo-router";
 import { ArrowLeft, Camera, Check, Mail, MapPin, Phone, User } from "lucide-react-native";
 import { useState } from "react";
-import { Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {  ActivityIndicator, Image, KeyboardAvoidingView, Platform,  ScrollView, Text, TextInput, TouchableOpacity, View  } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context";
+import { updateUserProfile, useAuth } from "../../contexts/AuthContext";
 
 export default function SenderEditProfileScreen() {
     const router = useRouter();
 
-    // Mock user data state
+    const { user, profile, refreshProfile } = useAuth();
+    const [loading, setLoading] = useState(false);
+
     const [formData, setFormData] = useState({
-        firstName: "Moussa",
-        lastName: "Koné",
-        email: "moussa.kone@example.com",
-        phone: "+223 70 12 34 56",
-        address: "Bamako, Mali"
+        firstName: profile?.prenom || "",
+        lastName: profile?.nom || "",
+        email: profile?.email || "",
+        phone: profile?.telephone || "",
+        address: (profile as any)?.address || ""
     });
 
-    const handleSave = () => {
-        // Implement save logic here
-        router.back();
+    const handleSave = async () => {
+        if (!user) return;
+        setLoading(true);
+        try {
+            await updateUserProfile(user.uid, {
+                prenom: formData.firstName,
+                nom: formData.lastName,
+                email: formData.email,
+                telephone: formData.phone,
+                address: formData.address,
+            } as any);
+            await refreshProfile();
+            router.back();
+        } catch (error) {
+            console.error("Erreur mise à jour profil:", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -142,7 +161,11 @@ export default function SenderEditProfileScreen() {
                             className="w-full bg-[#064E3B] py-4 rounded-2xl items-center justify-center flex-row shadow-lg shadow-emerald-900/10 active:scale-[0.98]"
                         >
                             <Check size={20} color="white" className="mr-2" />
-                            <Text className="text-white font-bold text-lg">Enregistrer les modifications</Text>
+                            {loading ? (
+                                <ActivityIndicator color="white" />
+                            ) : (
+                                <Text className="text-white font-bold text-lg">Enregistrer les modifications</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
                 </View>

@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
-import { Bell, User, QrCode, ArrowUpRight } from "lucide-react-native";
+import { ArrowUpRight, Bell, QrCode, User } from "lucide-react-native";
+import { Dimensions, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomTabBar } from "../../components/BottomTabBar";
-import { clsx } from "clsx";
+import { useReceiver } from "../../contexts/ReceiverContext";
 
 // Mock Data for Transactions
 const TRANSACTIONS = [
@@ -53,7 +53,8 @@ const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
     const router = useRouter();
-    const [balance, setBalance] = useState(12450.00);
+    const { state } = useReceiver();
+    const balance = state.balanceEUR;
 
     return (
         <SafeAreaView className="flex-1 bg-background">
@@ -111,28 +112,32 @@ export default function HomeScreen() {
                         </View>
 
                         {/* Transactions */}
-                        <View className="flex-1 flex-col">
+                        <View className="flex-1 flex-col mt-4">
                             <Text className="mb-4 text-lg font-bold text-foreground">Activité Récents</Text>
                             <View className="flex-col gap-4">
-                                {TRANSACTIONS.map((tx) => (
-                                    <TouchableOpacity
-                                        key={tx.id}
-                                        className="flex-row items-center justify-between rounded-2xl bg-card p-4"
-                                    >
-                                        <View className="flex-row items-center gap-4">
-                                            <View className={clsx("flex h-10 w-10 items-center justify-center rounded-full", tx.avatarColor)}>
-                                                <Text className={clsx("text-sm font-bold", tx.avatarInitialColor)}>{tx.name.charAt(0)}</Text>
+                                {state.recentTransactions.length === 0 ? (
+                                    <Text className="text-muted-foreground text-center py-4">Aucune transaction pour le moment.</Text>
+                                ) : (
+                                    state.recentTransactions.map((tx) => (
+                                        <TouchableOpacity
+                                            key={tx.id}
+                                            className="flex-row items-center justify-between rounded-2xl bg-card p-4"
+                                        >
+                                            <View className="flex-row items-center gap-4">
+                                                <View className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                                                    <Text className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{tx.senderName.charAt(0)}</Text>
+                                                </View>
+                                                <View className="flex-col">
+                                                    <Text className="text-sm font-semibold text-foreground">{tx.senderName}</Text>
+                                                    <Text className="text-xs text-muted-foreground">Reçu • {tx.date.toLocaleDateString('fr-FR')}</Text>
+                                                </View>
                                             </View>
-                                            <View className="flex-col">
-                                                <Text className="text-sm font-semibold text-foreground">{tx.name}</Text>
-                                                <Text className="text-xs text-muted-foreground">{tx.wuraId} • {tx.date}</Text>
-                                            </View>
-                                        </View>
-                                        <Text className={clsx("text-sm font-bold", tx.type === 'received' ? 'text-emerald-600' : 'text-foreground')}>
-                                            {tx.amount}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
+                                            <Text className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                                                + {tx.amountEUR.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))
+                                )}
                             </View>
                         </View>
                     </View>

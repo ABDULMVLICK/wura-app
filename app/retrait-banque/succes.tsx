@@ -1,12 +1,16 @@
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView } from "react-native";
-import { useRouter } from "expo-router";
-import { Check, ArrowRight, FileText, Building2, Clock, Hash } from "lucide-react-native";
-import { clsx } from "clsx";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { ArrowRight, Building2, Check, Clock, FileText, Hash } from "lucide-react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function RetraitSuccesScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams();
+
+    const rawAmount = params.amount;
+    const amount = rawAmount ? parseFloat(rawAmount as string) : 500.00;
+
     // Mock data matching the screenshot
-    const amount = 500.00;
     const bankName = "BNP Paribas";
     const estimatedDate = "24-48h";
     const reference = "#TRX-89204";

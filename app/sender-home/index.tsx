@@ -2,8 +2,11 @@ import { clsx } from "clsx";
 import { useRouter } from "expo-router";
 import { ArrowRight, ChevronDown, Plus } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import { useState } from "react";
-import { Image, Keyboard, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { CountrySelector, WESTERN_COUNTRIES } from "../../components/CountrySelector";
+import { useTransfer } from "../../contexts/TransferContext";
 
 // Mock Data for Recents
 const RECENTS = [
@@ -15,7 +18,17 @@ const RECENTS = [
 
 export default function SenderHomeScreen() {
     const router = useRouter();
-    const [amount, setAmount] = useState("50000");
+    const { state: transferState, setAmountXOF, getEstimatedEUR } = useTransfer();
+
+    useEffect(() => {
+        if (!transferState.amountXOF) {
+            setAmountXOF("50000");
+        }
+    }, []);
+
+    const amount = transferState.amountXOF;
+    const [isCountryModalVisible, setIsCountryModalVisible] = useState(false);
+    const [selectedCountry, setSelectedCountry] = useState(WESTERN_COUNTRIES[0]); // France
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === "dark";
 
@@ -51,18 +64,15 @@ export default function SenderHomeScreen() {
                         {/* Country Selector */}
                         <View className="items-center px-6 mt-4">
                             <View className="w-full max-w-xs">
-                                <TouchableOpacity className="w-full bg-[#F9FAFB] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-3 flex-row items-center justify-between shadow-sm active:scale-[0.98]">
-                                    <View className="flex-row items-center gap-6">
-                                        <Text className="text-xs font-medium text-gray-500 uppercase tracking-wide absolute -top-2.5 left-4 bg-white dark:bg-[#221b10] px-1">
+                                <TouchableOpacity onPress={() => setIsCountryModalVisible(true)} className="w-full bg-[#F9FAFB] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-3 flex-row items-center justify-between shadow-sm active:scale-[0.98]">
+                                    <View className="flex-row items-center gap-9">
+                                        <Text className="text-xs font-medium text-gray-500 uppercase tracking-wide absolute -top-3 left-4 bg-white dark:bg-[#221b10] px-1">
                                             Pays du bénéficiaire
                                         </Text>
-                                        {/* Flag Mockup for Mali */}
-                                        <View className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden border border-gray-100 flex-row">
-                                            <View className="flex-1 bg-green-500" />
-                                            <View className="flex-1 bg-yellow-400" />
-                                            <View className="flex-1 bg-red-500" />
+                                        <View className="w-6 h-4 rounded-sm overflow-hidden border border-gray-100 dark:border-white/10 flex-row">
+                                            {selectedCountry.flag}
                                         </View>
-                                        <Text className="font-semibold text-gray-800 dark:text-gray-100">Mali</Text>
+                                        <Text className="font-semibold text-gray-800 dark:text-gray-100">{selectedCountry.name}</Text>
                                     </View>
                                     <ChevronDown size={20} className="text-gray-400" color="#9ca3af" />
                                 </TouchableOpacity>
@@ -75,7 +85,7 @@ export default function SenderHomeScreen() {
                                 <View className="relative w-full flex-row items-center justify-center">
                                     <TextInput
                                         value={amount}
-                                        onChangeText={(text) => setAmount(text.replace(/[^0-9]/g, ''))}
+                                        onChangeText={(text) => setAmountXOF(text.replace(/[^0-9]/g, ''))}
                                         keyboardType="numeric"
                                         // autoFocus={true} // Can behave oddly on some devices if navigating back
                                         className="w-full bg-transparent text-center text-[3.5rem] font-bold tracking-tight text-gray-900 dark:text-white leading-none p-0"
@@ -92,7 +102,7 @@ export default function SenderHomeScreen() {
                                 </Text>
 
                                 <View className="flex-row items-center justify-center gap-2 mt-2">
-                                    <Text className="text-lg font-medium text-gray-400 dark:text-gray-500">≈ 75.00 €</Text>
+                                    <Text className="text-lg font-medium text-gray-400 dark:text-gray-500">≈ {getEstimatedEUR() || "0.00"} €</Text>
                                 </View>
 
                                 <View className="mt-2 px-3 py-1 rounded-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
@@ -148,7 +158,7 @@ export default function SenderHomeScreen() {
 
                             <View className="px-6 pt-2">
                                 <TouchableOpacity
-                                    onPress={() => router.push({ pathname: "/sender-home/confirmation-amount", params: { amount } })}
+                                    onPress={() => router.push("/sender-home/confirmation-amount")}
                                     className="w-full bg-[#064E3B] py-4 rounded-xl shadow-lg shadow-emerald-900/10 flex-row items-center justify-center gap-3 active:scale-[0.98]"
                                 >
                                     <Text className="text-white font-bold text-lg">Transférer</Text>
@@ -159,6 +169,13 @@ export default function SenderHomeScreen() {
                     </View>
                 </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
+
+            <CountrySelector
+                visible={isCountryModalVisible}
+                onClose={() => setIsCountryModalVisible(false)}
+                onSelect={setSelectedCountry}
+                selectedCode={selectedCountry.code}
+            />
         </SafeAreaView>
     );
 }

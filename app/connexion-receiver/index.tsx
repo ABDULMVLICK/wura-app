@@ -1,16 +1,52 @@
+import { GoogleAuthProvider, signInWithCredential } from "@react-native-firebase/auth";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { Link, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import { Image, SafeAreaView, Text, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import {  ActivityIndicator, Alert, Image,  Text, TouchableOpacity, View  } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context";
+import { auth } from "../../lib/firebase";
+
+// Configure Google Sign-In (le webClientId vient de la console Firebase)
+GoogleSignin.configure({
+    webClientId: "107069302242-7gfurhktqt5etgs5u0241qsrbvcmcvce.apps.googleusercontent.com",
+    iosClientId: "107069302242-jcvddehcuprc88ab0lcb0admb52tmqko.apps.googleusercontent.com",
+});
 
 export default function ReceiverLoginScreen() {
     const router = useRouter();
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === "dark";
+    const [loading, setLoading] = useState(false);
 
-    const handleGoogleLogin = () => {
-        // Mock Google login — navigate to receiver home
-        router.replace("/accueil");
+    const handleGoogleLogin = async () => {
+        setLoading(true);
+        try {
+            await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+            const signInResult = await GoogleSignin.signIn();
+
+            const idToken = signInResult?.data?.idToken;
+            if (!idToken) {
+                throw new Error("Impossible de récupérer le token Google.");
+            }
+
+            const googleCredential = GoogleAuthProvider.credential(idToken);
+            await signInWithCredential(auth, googleCredential);
+
+            // La redirection est gérée automatiquement par AuthContext dans _layout.tsx
+        } catch (error: any) {
+            console.error("Erreur Google Sign-In:", error);
+            if (error.code !== "SIGN_IN_CANCELLED") {
+                Alert.alert(
+                    "Erreur",
+                    error?.message || "Impossible de se connecter avec Google."
+                );
+            }
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -54,16 +90,24 @@ export default function ReceiverLoginScreen() {
 
                         <TouchableOpacity
                             onPress={handleGoogleLogin}
+                            disabled={loading}
                             className="flex-row w-full items-center justify-center gap-3 rounded-2xl bg-white border-2 border-gray-200 px-6 py-4 active:opacity-80 shadow-sm"
+                            style={loading ? { opacity: 0.6 } : {}}
                         >
-                            <Image
-                                source={{ uri: "https://developers.google.com/identity/images/g-logo.png" }}
-                                className="w-5 h-5"
-                                resizeMode="contain"
-                            />
-                            <Text className="text-base font-semibold text-gray-700">
-                                Se connecter avec Google
-                            </Text>
+                            {loading ? (
+                                <ActivityIndicator color="#064E3B" />
+                            ) : (
+                                <>
+                                    <Image
+                                        source={{ uri: "https://developers.google.com/identity/images/g-logo.png" }}
+                                        className="w-5 h-5"
+                                        resizeMode="contain"
+                                    />
+                                    <Text className="text-base font-semibold text-gray-700">
+                                        Se connecter avec Google
+                                    </Text>
+                                </>
+                            )}
                         </TouchableOpacity>
 
                         <View className="mt-2 flex-row justify-center gap-1">

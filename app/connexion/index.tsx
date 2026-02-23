@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, ScrollView, SafeAreaView, TouchableOpacity, KeyboardAvoidingView, Platform } from "react-native";
+import {  View, Text, ScrollView,  TouchableOpacity, KeyboardAvoidingView, Platform  } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
 import { Mail, Lock, ArrowRight } from "lucide-react-native";
 import { WuraLogo } from "../../components/WuraLogo";

@@ -1,0 +1,53 @@
+{
+  "id": "4ac46ba0-ca44-42a5-aefc-8992a95cd32b",
+  "status": "ERRORED",
+  "platform": "IOS",
+  "error": {
+    "errorCode": "XCODE_BUILD_ERROR",
+    "message": "The \"Run fastlane\" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:\n- include of non-modular header inside framework module 'RNFBApp.RCTConvert_FIRApp': '/Users/expo/workingdir/build/ios/Pods/Headers/Public/React-Core/React/RCTConvert.h' [-Werror,-Wnon-modular-include-in-framework-module]\n- include of non-modular header inside framework module 'RNFBApp.RCTConvert_FIROptions': '/Users/expo/workingdir/build/ios/Pods/Headers/Public/React-Core/React/RCTConvert.h' [-Werror,-Wnon-modular-include-in-framework-module]\n- include of non-modular header inside framework module 'RNFBApp.RNFBAppModule': '/Users/expo/workingdir/build/ios/Pods/Headers/Public/React-Core/React/RCTBridgeModule.h' [-Werror,-Wnon-modular-include-in-framework-module]\n- include of non-modular header inside framework module 'RNFBApp.RNFBRCTEventEmitter': '/Users/expo/workingdir/build/ios/Pods/Headers/Public/React-Core/React/RCTEventEmitter.h' [-Werror,-Wnon-modular-include-in-framework-module]\n- include of non-modular header inside framework module 'RNFBApp.RNFBSharedUtils': '/Users/expo/workingdir/build/ios/Pods/Headers/Public/React-Core/React/RCTBridgeModule.h' [-Werror,-Wnon-modular-include-in-framework-module]\n- include of non-modular header inside framework module 'RNFBApp.RNFBUtilsModule': '/Users/expo/workingdir/build/ios/Pods/Headers/Public/React-Core/React/RCTBridgeModule.h' [-Werror,-Wnon-modular-include-in-framework-module]\nRefer to \"Xcode Logs\" below for additional, more detailed logs."
+  },
+  "artifacts": {
+    "xcodeBuildLogsUrl": "https://job-logs.eascdn.net/production-xcode-logs/4ac46ba0-ca44-42a5-aefc-8992a95cd32b?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260221T042848Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=142e2d9b660e7ef4308fad9a0f232309397a67a6c0f17c4e9f52056d0ae30ce22f8e2c72506d6919ea0970053269fd4a25643279227d3bf8d3eabb645f9b7dc13d6c5603b01605e25dc56bfcad385a3b7198e268463246638c2e62211bec9ddebf51100038749c44379e20869ac42e1a6a066de8d6e2e416fc2b1fd403f4fb2f5febf21de158728b9c464cb6c2d9d449f5871ce046a1467b387e6b219472b117022c8f1e4aa1820ff73f057960949142508aedb5fc30e4d620933a4bb7b03587deb5dbf935c0f8669f96ef059d8721011e46a4272537996449930185d23e4cf96e15b22a0548bc1733efc0cc57ee4e2d73dad88ff0b247a7731e187af40e393b"
+  },
+  "fingerprint": {
+    "id": "019c7da1-9c3b-773d-a02f-10b2c7f51344",
+    "hash": "ea05ebb1e372446dbbc395527d74cd68c9f7e3ab"
+  },
+  "initiatingActor": {
+    "id": "ceb11424-69af-4bda-9f44-1b0db3af02a7",
+    "displayName": "abdulmvlick"
+  },
+  "logFiles": [
+    "https://job-logs.eascdn.net/production/4ac46ba0-ca44-42a5-aefc-8992a95cd32b/1771636031520-694e8836-a9c4-45a1-9f4d-b88cb9af5433.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260221T042848Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=5b1d02c44ca9efed1edf9ceb1b79c873851e37b408b12bb1f4a3097cdefe2e99d0217183dc3cc7485a0d73fc9b86754f0183a5ff578dba4c53a904547cf135c4c03b809a51700d5bba50dfc28f863bbd5ed2914b787469d1ad96144c281029c263c2ea62eec982701e93122d4ed91b94ff5afb1556d0237b15104053df25888311c7910b40bb77b01a1fdf65b3ef4ca2a07821c594ed302e75a1a1ab35af264bba7b1c0cd53f968a76d6fdf20241f3122d42903d3bdf6e70e32f8a83696935683bcbe0c4343b694f0ea194bc4a9fcfdfa68be63dbd7588edc3df91516fe57efe61862f34fdfee09151ba73175bd5718e4bdb27f9b808e0800eddc2bb41a90fcf",
+    "https://job-logs.eascdn.net/production/4ac46ba0-ca44-42a5-aefc-8992a95cd32b/1771636033055-703452f0-25c4-48d4-a915-2cf38f1dc638.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260221T042848Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=8df530a1b6c8ad6d08a9721450ae8cf98943f60548fc3d901232164b4c4f44f9fb94b2a7bee51e9c727585949e06382cedc3448dc433db5da1b349fcc5a98b8cc487b24646e225844f03548aec3dc22ea710a7e10e5fce257115d55a38361b702c0b973d2ea71d74590b2581bf3c88d1cb3dfb1a75dd39d766ff94e119942018235a7228d7291f2c35778db8096253a98c723984dbc5c9d5412d2adf4e85c2ef59f8b4324391ac642689165d0a55b4e050e7237c784b138b215bf4d2a1113b3d9c56c78b518ea8717f8b16a83dd7aa1dd8fa711e00b0042214c5f9b452cf3895380ce9335ae1bafa732d913d64ae5a84a60a96251b678cbe1ae283d27a5ada9e",
+    "https://job-logs.eascdn.net/production/4ac46ba0-ca44-42a5-aefc-8992a95cd32b/1771636033286-af3c6677-d1f2-46cc-b9d3-7f06bb38c59f.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260221T042848Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=16d3b15f13c92a3c80e6f3247ec6649585a1925ec71eeb51a67d3b4d7be218f7f6d8d70e181cd6baf535a54f00683d82bcd9897b5b5ea49a390b33c25ad7c1c3ef853dbf6b20d728aebc31ccc2bd97c0cf43a979d4a55c213f7c0e5558633c5b57f44e74f9e30447e78150c112cd721f3e0a675c4f6eda7289416f14adaf36466633e5f294e254607086a708149394eb6f03aba270f1cef72548094cb777a5d597d2b1c31f39ecda796a47ff62d764288f15c834573f4838dd40b2e449026d5cb61c16cac771ae66555a0e2a33480f31c51466fa8483efe79cc5019c001604a97855a1a64a3898ec21b5ba72d4ad781696ff3a51ee3bd4874b694bfa49397801",
+    "https://job-logs.eascdn.net/production/4ac46ba0-ca44-42a5-aefc-8992a95cd32b/1771636033483-8eb718c8-ef98-40e3-be90-e944c54ca824.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260221T042848Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=43f20e9d1c1a833e65f5bbc3641da88d0ff39a6e36d135613bec274a913ff488955018922dbb5b79ddb8d31124b3030c2e370351bac7cc72737e67127be2ed2b2e7ed631d0221909ccaa5f6b55273c5ca4c72ea241998e399f791af323e7c0232341ca1b682113c842a92829a0c1cd07cec84b453f362d7ecbc851216490f4ae597c7dd3961100ebabf0d7c1f50c6e175146f45b2ce67fb8caa7ad3c5f53d40eba46d14471e1992597fc6b763961181d3a8bbe340bed39f094c04660fbd2716325b139effebe58a56196948e8187e014d1a61971c6629fb41b7a5b7fab7fd2f561360a8aba42439b2a69fbdc3ea0ade1c8deba200fc8609bd4b9fb793a10da8e"
+  ],
+  "project": {
+    "id": "517e5327-3235-4881-98b1-a397a35c84ce",
+    "name": "wura-native",
+    "slug": "wura-native",
+    "ownerAccount": {
+      "id": "561ac7b6-df12-4347-8683-62d4f06cffd3",
+      "name": "abdulmvlick"
+    }
+  },
+  "distribution": "INTERNAL",
+  "buildProfile": "development",
+  "sdkVersion": "54.0.0",
+  "appVersion": "1.0.0",
+  "appBuildVersion": "1",
+  "gitCommitHash": "016acc36bf87c0a29012972061375596ec3c83b1",
+  "gitCommitMessage": "feat: dark mode toggle, logo sizing & spacing adjustments across all screens\n\n- Added dark mode toggle on sender and receiver profile screens\n- Theme-aware logo rendering (light/dark) on all screens\n- Added dark logo asset (wuraa-removebg-logoVersionDark.png)\n- Adjusted logo sizes and spacing for optimal display\n- Removed logo from sender-home header, kept profile icon\n- Changed CTA button text to 'Transférer'\n- Reduced card padding on auth screens for tighter layout",
+  "priority": "NORMAL",
+  "createdAt": "2026-02-21T01:07:11.295Z",
+  "updatedAt": "2026-02-21T01:22:30.644Z",
+  "completedAt": "2026-02-21T01:22:24.601Z",
+  "expirationDate": "2026-03-07T01:07:11.342Z",
+  "isForIosSimulator": true,
+  "metrics": {
+    "buildWaitTime": 116,
+    "buildQueueTime": 51108,
+    "buildDuration": 857929
+  }
+}

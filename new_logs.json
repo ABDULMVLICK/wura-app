@@ -1,0 +1,53 @@
+{
+  "id": "0d715373-c20e-4769-8600-dbf44f51d282",
+  "status": "ERRORED",
+  "platform": "IOS",
+  "error": {
+    "errorCode": "UNKNOWN_ERROR",
+    "message": "Unknown error. See logs of the Install pods build phase for more information."
+  },
+  "artifacts": {
+    "xcodeBuildLogsUrl": "https://job-logs.eascdn.net/production-xcode-logs/0d715373-c20e-4769-8600-dbf44f51d282?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260221T005948Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=1dc05b7946f263183898e21604f991c49419f3d49b3318d569cb776c86e3b6976907718892d4bd9522cb81f0e9884d6234469a34c277c9b6acd8e8aad23c94455d99dc69d38fec79b0b30275dfd013ab1227dec59e9fcc0cfa16e17952539acf42becbc514e9c0e038003d4224c32266d2e65986e1ced8dcf2f212acc424a25cb02968b246761bbdb7cf450230f39e90d434a67d9ef10ebafecd753ab08de1f861d0d7051975e8384e335cb5587c26d87a6a85b9e02ff2927caa16097e30c8fc93dcbe6324728162738626a1715a996e629c1413e008e6ede219b18245b6270d8f167385de1c18049f8dba85391d1d2f19092ea865b7811e5cc0e628deffe599"
+  },
+  "fingerprint": {
+    "id": "019c7db2-4d09-7181-8fc0-d2fc979f58c7",
+    "hash": "b60a0854e13ba582ee017495413a483f34a11849"
+  },
+  "initiatingActor": {
+    "id": "ceb11424-69af-4bda-9f44-1b0db3af02a7",
+    "displayName": "abdulmvlick"
+  },
+  "logFiles": [
+    "https://job-logs.eascdn.net/production/0d715373-c20e-4769-8600-dbf44f51d282/1771635363246-7cb58c16-4f2e-4281-8c88-0cfed0bd4790.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260221T005948Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=b0e7ca3e0436c183f6f87e5595c0645e10099dd52a7639dbac22aca80aaf53542221bb4b278623ffa979b2f0138324fe92ba1530a41f6a601a5dc9419a128b6a50801881fb718d7bcf2b907361de7fab3af8872aa656176ebca15e13c1679b063fe1f6a6c4d141786286eeaff8343be6f98ba5ce3c9cfc2cc0f1aae01654735f9e42d88234b3cf8e5e1ab30dade1dec1a13d5940efbc2cc876c45c5d29280fa1400ebb416218a6d926ffb6cee9cc0d3abc6195f33a521e19ac6a405b18d37eb022f0b3a041c5fb0a0dca47f5f9734097e4bd47495ed74dcdc93073bd4194cc345748f52a42e9ae966b6692026775b8de02b1233735400781d05d7e022b764323",
+    "https://job-logs.eascdn.net/production/0d715373-c20e-4769-8600-dbf44f51d282/1771635365912-86fbd8fa-c65e-4af5-a02a-da756b5439df.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260221T005948Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=92e198ee8ad849b2c7ca64332212b8ec484d76924d578fec5ab86b70dcd99d6852bc1470733527cb9f0bd4bebb4958cfa7d5380afa3d6c9cf5a3ffd82b3e87219e4afa6811209063ac3b18a886f9c4a221735525704e462cf28dfac16bb001d6b303dc39b2aba5ec8b5a3d908585f2cf4e39aad70879cd0a05da0695ffd3bbf04dc54072433458d3a2bf296e6cab89746f393102cc297f4c6f3dd014fe49b7f143ae82fe8e2a9483c5f314e37e36959fdefee8b66945a73eb98e0d7582397be2361bf636259e7b48d45e1ad815fdfa790a1c2f39cc6a0c303d625abf58b4c33373a178a26a853a2f2ea520daf7ccf33b80ef13619c83df11f62cd5f88aa010d7",
+    "https://job-logs.eascdn.net/production/0d715373-c20e-4769-8600-dbf44f51d282/1771635366119-2d2aac50-b57f-4a92-92bc-f257f266c70a.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260221T005948Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=5d429061a60c0117f17b766b3f209d728378650012cc57a3cf16ee6079beee84f84ffec095eccd1e837eba41f5749bb832c2a856d2e87a5410f38a0db0fbc6f4dbc733fcfe785bfee4d4f56f444ee5753ab789c55b459728592030322af489ef7dd6cf824006f3ea9b362f1da64e0f8c1469cc76a870102a8c2902c1f84955806c409f43bad26c9405b86f694fdf79e91974ef78db5b554cd650f9570318ed77ed88539d0c42abd32811beb1eedcf51f1355ce07e134df4826930fdc0f48631a4be30ab83fdce8ccb9995e5ddc1bc444da02d913055c2c58cdcb8e7d1f229d415203584526fd3b4ba5276c6c66c326517545f3a087f9bfbaeaae498efbfe3c90",
+    "https://job-logs.eascdn.net/production/0d715373-c20e-4769-8600-dbf44f51d282/1771635366300-46639f52-f278-4910-8917-ae8f94abb735.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260221%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260221T005948Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=55d51f13fc0d309b814ab814d1a357611d1b2fb1064bbd4dad648363feed43cfaf8feec06a011e704ca1965d90bc22b3313da71af4db8498246df6834bdd43ff5ca3da261f4f7d5047cf9fd7606a51986fc7688b5f1501aba5c72fab8b420bf89472b403ad855523702b14379a5a03b00926f232a6c01e8e1ff8c82394a7d1aa47d648a7dcb67565dcd533f4280cf26b678e21286e74ab86aabfc21856345f3c635f33e2c13d0be8409f7d41525711c5595af3ea2cf84c64316419cd750269c35fdc42f45377d1d8b0e6947f18b810ec6c274d7ed65a224b70772ebfdaed73b711f629d6a6206a219a390d3eb6014feef8425f5b12ffceab2ce60e4a04509457"
+  ],
+  "project": {
+    "id": "517e5327-3235-4881-98b1-a397a35c84ce",
+    "name": "wura-native",
+    "slug": "wura-native",
+    "ownerAccount": {
+      "id": "561ac7b6-df12-4347-8683-62d4f06cffd3",
+      "name": "abdulmvlick"
+    }
+  },
+  "distribution": "INTERNAL",
+  "buildProfile": "development",
+  "sdkVersion": "54.0.0",
+  "appVersion": "1.0.0",
+  "appBuildVersion": "1",
+  "gitCommitHash": "016acc36bf87c0a29012972061375596ec3c83b1",
+  "gitCommitMessage": "feat: dark mode toggle, logo sizing & spacing adjustments across all screens\n\n- Added dark mode toggle on sender and receiver profile screens\n- Theme-aware logo rendering (light/dark) on all screens\n- Added dark logo asset (wuraa-removebg-logoVersionDark.png)\n- Adjusted logo sizes and spacing for optimal display\n- Removed logo from sender-home header, kept profile icon\n- Changed CTA button text to 'Transférer'\n- Reduced card padding on auth screens for tighter layout",
+  "priority": "NORMAL",
+  "createdAt": "2026-02-21T00:56:03.043Z",
+  "updatedAt": "2026-02-21T00:57:44.535Z",
+  "completedAt": "2026-02-21T00:57:39.383Z",
+  "expirationDate": "2026-03-07T00:56:03.071Z",
+  "isForIosSimulator": true,
+  "metrics": {
+    "buildWaitTime": 106,
+    "buildQueueTime": 47518,
+    "buildDuration": 44581
+  }
+}

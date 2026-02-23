@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Animated } from "react-native";
+import {  View, Text, TouchableOpacity, ScrollView,  Animated  } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Check, Copy, Wallet } from "lucide-react-native";
 
