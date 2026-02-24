@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTransfer } from "../../contexts/TransferContext";
+import { saveSecureData } from "../../lib/storage";
 
 interface PaymentMethod {
     id: string;
@@ -65,8 +66,7 @@ const PAYMENT_METHODS: PaymentMethod[] = [
 ];
 
 function formatAmount(value: number): string {
-    // .replace is not strictly necessary for display if we use locale, but sticking to logic
-    return value.toLocaleString("fr-FR").replace(/,/g, ".");
+    return Number(value || 0).toLocaleString("fr-FR").replace(/,/g, ".");
 }
 
 import { useKkiapay } from "@kkiapay-org/react-native-sdk";
@@ -81,19 +81,41 @@ export default function PaiementScreen() {
     const [loading, setLoading] = useState(false);
     const { openKkiapayWidget, addSuccessListener, addKkiapayCloseListener } = useKkiapay();
     const pendingTxRef = useRef<string | null>(null);
+    const paymentSuccessRef = useRef(false);
+    const [shouldNavigateId, setShouldNavigateId] = useState<string | null>(null);
+
+    // Effet séparé pour la navigation afin d'éviter les crashs Expo Router
+    useEffect(() => {
+        if (shouldNavigateId) {
+            // InteractionManager ou long timeout pour être sûr que React Native a repris la main
+            const timer = setTimeout(() => {
+                router.replace({
+                    pathname: "/sender-home/transfert-reussi",
+                    params: { transactionId: shouldNavigateId }
+                });
+                setShouldNavigateId(null);
+            }, 800);
+            return () => clearTimeout(timer);
+        }
+    }, [shouldNavigateId, router]);
 
     useEffect(() => {
         addSuccessListener((data: any) => {
             console.log("Kkiapay Success Event:", data);
-            if (pendingTxRef.current) {
-                router.push({ pathname: "/sender-home/transfert-reussi", params: { transactionId: pendingTxRef.current } });
-                pendingTxRef.current = null;
-            }
+            paymentSuccessRef.current = true;
         });
 
         addKkiapayCloseListener(() => {
             console.log("Kkiapay Widget closed");
             setLoading(false);
+
+            if (pendingTxRef.current) {
+                // Toujours naviguer vers l'écran de statut (qui fait du Polling)
+                // Cela évite de rester bloqué sur l'écran si l'événement 'Success' du FrontEnd échoue
+                setShouldNavigateId(pendingTxRef.current);
+                pendingTxRef.current = null;
+                paymentSuccessRef.current = false;
+            }
         });
     }, []);
 
@@ -121,6 +143,8 @@ export default function PaiementScreen() {
             });
 
             pendingTxRef.current = tx.id;
+            await saveSecureData('pendingKkiapayTx', tx.id);
+            await saveSecureData('pendingKkiapayCountry', state.recipient.pays || "le pays du bénéficiaire");
 
             // Ouverture du widget Kkiapay pour valider le paiement mobile
             openKkiapayWidget({
@@ -128,7 +152,7 @@ export default function PaiementScreen() {
                 key: process.env.EXPO_PUBLIC_KKIAPAY_PUBLIC_KEY || "",
                 sandbox: true,
                 reason: "Envoi Wura vers " + state.recipient.prenom,
-                data: tx.id // ID de la DB passé au webhook
+                data: tx.referenceId // l'ID court "TX-XXX" attendu par le webhook
             });
 
         } catch (error) {

@@ -67,7 +67,7 @@ export default function RetraitBanqueScreen() {
                         <View className="mt-6 flex-row items-center gap-2 rounded-full bg-emerald-50 px-4 py-2">
                             <Wallet size={16} className="text-emerald-800" color="#065f46" />
                             <Text className="text-sm font-medium text-emerald-800">
-                                Solde dispo: {balance.toLocaleString("fr-FR", { minimumFractionDigits: 2 })}€
+                                Solde dispo: {Number(balance || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 })}€
                             </Text>
                         </View>
                     </View>
@@ -95,19 +95,19 @@ export default function RetraitBanqueScreen() {
                     <View className="mb-8 rounded-3xl border border-border bg-card p-6 shadow-sm">
                         <View className="mb-4 flex-row items-center justify-between">
                             <Text className="text-sm text-muted-foreground">Montant du retrait</Text>
-                            <Text className="font-bold text-foreground">{numericAmount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</Text>
+                            <Text className="font-bold text-foreground">{Number(numericAmount || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</Text>
                         </View>
                         <View className="mb-4 flex-row items-center justify-between border-b border-border/50 pb-4">
                             <View className="flex-row items-center gap-1.5">
                                 <Text className="text-sm text-muted-foreground">Frais de service</Text>
                                 <Info size={14} className="text-muted-foreground/70" color="#9ca3af" />
                             </View>
-                            <Text className="font-bold text-foreground">{fees.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</Text>
+                            <Text className="font-bold text-foreground">{Number(fees || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</Text>
                         </View>
                         <View className="flex-row items-center justify-between">
                             <Text className="font-bold text-primary">Total débité</Text>
                             <Text className={clsx("text-xl font-bold", totalDeducted > balance ? "text-red-500" : "text-primary")}>
-                                {totalDeducted.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
+                                {Number(totalDeducted || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
                             </Text>
                         </View>
                         {totalDeducted > balance && (

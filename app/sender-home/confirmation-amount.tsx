@@ -41,7 +41,7 @@ export default function ConfirmationAmountScreen() {
 
                     <View className="items-center">
                         <Text className={clsx("text-[3.5rem] font-bold tracking-tight text-[#F59E0B] leading-none text-center", isLoading && "opacity-50")}>
-                            {isLoading ? "..." : Number(numericAmount).toLocaleString('fr-FR')}
+                            {isLoading ? "..." : Number(numericAmount || 0).toLocaleString('fr-FR')}
                         </Text>
                         <Text className="text-2xl font-bold text-slate-300 dark:text-slate-600 mt-2">
                             FCFA
@@ -108,23 +108,28 @@ export default function ConfirmationAmountScreen() {
 
                     <View className="mt-8 w-full bg-slate-50 dark:bg-white/5 rounded-2xl p-6 space-y-4">
                         <View className="flex-row justify-between items-center pb-4 border-b border-slate-100 dark:border-white/10">
-                            <Text className="text-slate-500 dark:text-slate-400">Taux Wura appliqué</Text>
+                            <Text className="text-slate-500 dark:text-slate-400">Montant net envoyé</Text>
                             <Text className="font-bold text-slate-900 dark:text-white">
-                                {isLoading ? "..." : (state.quote?.taux_wura_cfa || "-")} FCFA = 1 €
+                                {isLoading ? "..." : Number(state.quote?.baseAmountCfa || 0).toLocaleString('fr-FR')} FCFA
                             </Text>
                         </View>
                         <View className="flex-row justify-between items-center pb-4 border-b border-slate-100 dark:border-white/10">
-                            <View className="flex-row items-center gap-1">
-                                <Text className="text-slate-500 dark:text-slate-400">Frais Mobile Money</Text>
-                            </View>
+                            <Text className="text-slate-500 dark:text-slate-400">Frais réseau partenaires</Text>
                             <Text className="font-bold text-slate-900 dark:text-white">
-                                {isLoading ? "..." : getFeesXOF()} FCFA
+                                {isLoading ? "..." : Number(state.quote?.partnerFeesCfa || 0).toLocaleString('fr-FR')} FCFA
                             </Text>
                         </View>
-                        <View className="flex-row justify-between items-center">
-                            <Text className="text-slate-500 dark:text-slate-400">Total à débiter</Text>
+                        <View className="flex-row justify-between items-center pb-4 border-b border-slate-100 dark:border-white/10">
+                            <Text className="text-slate-500 dark:text-slate-400">Frais WURA</Text>
                             <Text className="font-bold text-slate-900 dark:text-white">
-                                {isLoading ? "..." : Number(getTotalXOF()).toLocaleString('fr-FR')} FCFA
+                                {isLoading ? "..." : Number(state.quote?.wuraFeesCfa || 0).toLocaleString('fr-FR')} FCFA
+                            </Text>
+                        </View>
+
+                        <View className="flex-row justify-between items-center">
+                            <Text className="text-slate-500 dark:text-slate-400">Total à payer</Text>
+                            <Text className="font-bold text-emerald-600 dark:text-emerald-400 text-lg">
+                                {isLoading ? "..." : Number(getTotalXOF() || 0).toLocaleString('fr-FR')} FCFA
                             </Text>
                         </View>
                     </View>

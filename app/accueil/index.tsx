@@ -92,8 +92,8 @@ export default function HomeScreen() {
                                 <Text className="mb-2 text-sm font-medium text-primary-foreground opacity-80">
                                     Solde disponible
                                 </Text>
-                                <Text className="mb-4 text-4xl font-bold tracking-tight text-white">
-                                    {balance.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
+                                <Text className="text-4xl font-bold tracking-tight text-white mb-4">
+                                    {Number(balance || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
                                 </Text>
 
                                 {/* WuraID Badge */}
@@ -131,15 +131,15 @@ export default function HomeScreen() {
                                         >
                                             <View className="flex-row items-center gap-4">
                                                 <View className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
-                                                    <Text className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{tx.senderName.charAt(0)}</Text>
+                                                    <Text className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{(tx.senderName || "U").charAt(0)}</Text>
                                                 </View>
                                                 <View className="flex-col">
-                                                    <Text className="text-sm font-semibold text-foreground">{tx.senderName}</Text>
-                                                    <Text className="text-xs text-muted-foreground">Reçu • {tx.date.toLocaleDateString('fr-FR')}</Text>
+                                                    <Text className="text-sm font-semibold text-foreground">{tx.senderName || "Utilisateur Wura"}</Text>
+                                                    <Text className="text-xs text-muted-foreground">Reçu • {new Date(tx.date).toLocaleDateString('fr-FR')}</Text>
                                                 </View>
                                             </View>
                                             <Text className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                                                + {tx.amountEUR.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
+                                                + {Number(tx.amountEUR || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
                                             </Text>
                                         </TouchableOpacity>
                                     ))

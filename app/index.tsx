@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
-import {  Animated, Image,  Text, View  } from "react-native"
+import { Animated, Image, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SplashScreen() {
@@ -24,8 +24,9 @@ export default function SplashScreen() {
             }),
         ]).start();
 
-        // Navigate to choice screen after 2 seconds
+        // Navigate to choice screen after 2 seconds if not already navigating/logged in
         const timer = setTimeout(() => {
+            // RootLayout handle already logged-in users, we only force /choix if not logged in
             router.replace("/choix");
         }, 2000);
 
@@ -33,7 +34,7 @@ export default function SplashScreen() {
     }, []);
 
     return (
-        <SafeAreaView className="flex-1 bg-[#2e2f31]">
+        <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-[#2e2f31]">
             <View className="flex-1 items-center justify-center">
                 <Animated.View
                     style={{
@@ -44,10 +45,10 @@ export default function SplashScreen() {
                 >
                     <Image
                         source={require("../assets/images/wuraa-removebg-logoVersionDark.png")}
-                        style={{ width: 600, height: 160 }}
+                        style={{ width: 300, height: 100 }}
                         resizeMode="contain"
                     />
-                    <Text className="text-base text-white/60 font-medium">
+                    <Text className="mt-2 text-base text-white/60 font-medium">
                         Transferts d'argent premium
                     </Text>
 

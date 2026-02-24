@@ -7,6 +7,7 @@ import { Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, Text
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CountrySelector, WESTERN_COUNTRIES } from "../../components/CountrySelector";
 import { useTransfer } from "../../contexts/TransferContext";
+import { deleteSecureData, getSecureData } from "../../lib/storage";
 
 // Mock Data for Recents
 const RECENTS = [
@@ -24,6 +25,19 @@ export default function SenderHomeScreen() {
         if (!transferState.inputValue) {
             setInputValue("50000");
         }
+
+        // Vérifier si un paiement Kkiapay était en cours lors d'un redémarrage / deep link
+        const checkPendingPayment = async () => {
+            const pendingTx = await getSecureData('pendingKkiapayTx');
+            if (pendingTx) {
+                await deleteSecureData('pendingKkiapayTx');
+                router.replace({
+                    pathname: "/sender-home/transfert-reussi",
+                    params: { transactionId: pendingTx }
+                });
+            }
+        };
+        checkPendingPayment();
     }, []);
 
     const amount = transferState.inputValue;
@@ -39,7 +53,7 @@ export default function SenderHomeScreen() {
     // For RN, standard TextInput is safer for "pavé numérique" (system keyboard).
 
     return (
-        <SafeAreaView className="flex-1 bg-white dark:bg-[#221b10]">
+        <SafeAreaView edges={['top']} className="flex-1 bg-white dark:bg-[#221b10]">
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 className="flex-1"
@@ -47,7 +61,7 @@ export default function SenderHomeScreen() {
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                     <View className="flex-1">
                         {/* Header: Profile icon right */}
-                        <View className="flex-row justify-end px-4 pt-2">
+                        <View className="flex-row justify-end px-4 pt-4">
                             <TouchableOpacity
                                 onPress={() => router.push("/sender-home/profil")}
                                 activeOpacity={0.7}
@@ -63,7 +77,7 @@ export default function SenderHomeScreen() {
                         </View>
 
                         {/* Country Selector */}
-                        <View className="items-center px-6 mt-4">
+                        <View className="items-center px-6 mt-6">
                             <View className="w-full max-w-xs">
                                 <TouchableOpacity onPress={() => setIsCountryModalVisible(true)} className="w-full bg-[#F9FAFB] dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-3 flex-row items-center justify-between shadow-sm active:scale-[0.98]">
                                     <View className="flex-row items-center gap-9">
@@ -107,7 +121,7 @@ export default function SenderHomeScreen() {
                                         onPress={toggleCurrency}
                                         className="bg-gray-100 dark:bg-white/10 p-2 rounded-full active:scale-95"
                                     >
-                                        <ArrowUpDown size={16} className="text-[#064E3B] dark:text-[#F59E0B]" />
+                                        <ArrowUpDown size={20} color={isDark ? "#F59E0B" : "#064E3B"} className="text-[#064E3B] dark:text-[#F59E0B]" />
                                     </TouchableOpacity>
                                     <View className="flex-1 h-[1px] bg-gray-200 dark:bg-white/10" />
                                 </View>
@@ -120,7 +134,7 @@ export default function SenderHomeScreen() {
 
                                 <View className="mt-2 px-3 py-1 rounded-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
                                     <Text className="text-xs font-medium text-gray-400 dark:text-gray-500">
-                                        1 € = 655.95 FCFA
+                                        1 € = 655.96 FCFA
                                     </Text>
                                 </View>
                             </View>

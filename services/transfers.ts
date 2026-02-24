@@ -2,11 +2,16 @@ import api from '../lib/api';
 import { Recipient, TransactionInfo } from '../types/transaction';
 
 export interface QuoteResult {
-    montant_cfa_total_a_payer: number;
+    baseAmountCfa: number;
+    commercialAmountCfa: number;
+    kkiapayFeeCfa: number;
+    partnerFeesCfa: number;
+    wuraFeesCfa: number;
+    totalToPayCfa: number;
     montant_usdt_a_envoyer_polygon: number;
     montant_euro_recu_par_jean: number;
-    frais_mobiles_cfa: number;
     taux_wura_cfa: number;
+    taux_officiel_cfa: number;
 }
 
 export const TransferService = {
@@ -25,6 +30,20 @@ export const TransferService = {
         const response = await api.get('/quotation', {
             params: { amount, currency, speed }
         });
+        return response.data;
+    },
+
+    /**
+     * Créer un nouveau bénéficiaire en base de données
+     */
+    createRecipient: async (data: { nom: string, prenom: string, iban: string, email?: string }) => {
+        const payload = {
+            firstName: data.prenom,
+            lastName: data.nom,
+            iban: data.iban,
+            email: data.email || `${data.prenom.toLowerCase()}.${data.nom.toLowerCase()}@wura.app`
+        };
+        const response = await api.post('/users/register/receiver', payload);
         return response.data;
     },
 
@@ -48,6 +67,14 @@ export const TransferService = {
      */
     getTransaction: async (id: string): Promise<TransactionInfo> => {
         const response = await api.get(`/transactions/${id}`);
+        return response.data;
+    },
+
+    /**
+     * Récupérer les infos publiques d'une transaction via son lien de claim (Sans Auth)
+     */
+    getClaimInfo: async (referenceId: string) => {
+        const response = await api.get(`/public-transactions/claim/${referenceId}`);
         return response.data;
     }
 };

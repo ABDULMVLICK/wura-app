@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { ArrowRight, Download, Send } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import {  Image,  Text, TouchableOpacity, View  } from "react-native"
+import { Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ChoiceScreen() {
@@ -10,16 +10,16 @@ export default function ChoiceScreen() {
     const isDark = colorScheme === "dark";
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
+        <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-background">
             <View className="flex-1 items-center justify-center px-6">
                 {/* Logo */}
                 <View className="mb-4 items-center">
                     <Image
                         source={isDark ? require("../../assets/images/wuraa-removebg-logoVersionDark.png") : require("../../assets/images/wuralogo-removebg-preview.png")}
-                        style={{ width: 450, height: 130 }}
+                        style={{ width: 280, height: 80 }}
                         resizeMode="contain"
                     />
-                    <Text className="mt-1 text-sm text-muted-foreground text-center">
+                    <Text className="mt-4 text-sm text-muted-foreground text-center">
                         Que souhaitez-vous faire ?
                     </Text>
                 </View>

@@ -1,18 +1,14 @@
 import { GoogleAuthProvider, signInWithCredential } from "@react-native-firebase/auth";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { Link, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { useState } from "react";
-import {  ActivityIndicator, Alert, Image,  Text, TouchableOpacity, View  } from "react-native"
+import { ActivityIndicator, Alert, Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "../../lib/firebase";
 
-// Configure Google Sign-In (le webClientId vient de la console Firebase)
-GoogleSignin.configure({
-    webClientId: "107069302242-7gfurhktqt5etgs5u0241qsrbvcmcvce.apps.googleusercontent.com",
-    iosClientId: "107069302242-jcvddehcuprc88ab0lcb0admb52tmqko.apps.googleusercontent.com",
-});
+import Toast from "react-native-toast-message";
+import { useWeb3Auth } from "../../contexts/Web3AuthContext";
 
 export default function ReceiverLoginScreen() {
     const router = useRouter();
@@ -20,20 +16,29 @@ export default function ReceiverLoginScreen() {
     const isDark = colorScheme === "dark";
     const [loading, setLoading] = useState(false);
 
+    const { loginWithGoogle } = useWeb3Auth();
+
     const handleGoogleLogin = async () => {
         setLoading(true);
         try {
-            await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+            // 1. Lance la connexion Google via Web3Auth et initialise le wallet en arrière-plan
+            const web3AuthResult = await loginWithGoogle();
 
-            const signInResult = await GoogleSignin.signIn();
-
-            const idToken = signInResult?.data?.idToken;
-            if (!idToken) {
-                throw new Error("Impossible de récupérer le token Google.");
+            if (!web3AuthResult || !web3AuthResult.userInfo?.oAuthIdToken) {
+                throw new Error("Impossible de récupérer le token Google depuis Web3Auth.");
             }
 
-            const googleCredential = GoogleAuthProvider.credential(idToken);
+            const { address, userInfo } = web3AuthResult;
+
+            // 2. Transfère le token Google à Firebase pour authentifier le Mobile
+            const googleCredential = GoogleAuthProvider.credential(userInfo.oAuthIdToken);
             await signInWithCredential(auth, googleCredential);
+
+            Toast.show({
+                type: 'success',
+                text1: 'Connexion Réussie',
+                text2: `Wallet prêt : ${address.substring(0, 8)}...`
+            });
 
             // La redirection est gérée automatiquement par AuthContext dans _layout.tsx
         } catch (error: any) {
@@ -50,7 +55,7 @@ export default function ReceiverLoginScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
+        <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-background">
             <View className="flex-1 items-center justify-center p-4">
                 <View className="w-full max-w-md flex-col gap-3 rounded-3xl bg-muted px-6 py-4">
                     {/* Back button */}
@@ -66,7 +71,7 @@ export default function ReceiverLoginScreen() {
                     <View className="items-center gap-1">
                         <Image
                             source={isDark ? require("../../assets/images/wuraa-removebg-logoVersionDark.png") : require("../../assets/images/wuralogo-removebg-preview.png")}
-                            style={{ width: 400, height: 110 }}
+                            style={{ width: 280, height: 80 }}
                             resizeMode="contain"
                         />
                         <Text className="text-sm text-muted-foreground text-center">

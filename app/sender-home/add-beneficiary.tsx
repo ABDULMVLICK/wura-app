@@ -10,6 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as z from "zod";
 import { CountrySelector, WESTERN_COUNTRIES } from "../../components/CountrySelector";
 import { useTransfer } from "../../contexts/TransferContext";
+import { TransferService } from "../../services/transfers";
 
 const beneficiarySchema = z.object({
     nom: z.string().min(2, "Le nom est trop court"),
@@ -114,22 +115,42 @@ export default function AddBeneficiaryScreen() {
 
     const [isCountryModalVisible, setIsCountryModalVisible] = useState(false);
     const [selectedCountry, setSelectedCountry] = useState(WESTERN_COUNTRIES[0]); // France
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const onSubmit = (data: BeneficiaryFormValues) => {
-        // Save the new beneficiary in the global context
-        setRecipient({
-            id: `new-${Date.now()}`,
-            wuraId: `${data.prenom.replace(/\s+/g, '')}${data.nom.charAt(0).toUpperCase()}`, // Auto-generated for routing validation
-            nom: data.nom,
-            prenom: data.prenom,
-            iban: data.iban,
-            bic: data.bic,
-            banque: data.banque,
-            pays: selectedCountry.name
-        });
+    const onSubmit = async (data: BeneficiaryFormValues) => {
+        setIsSubmitting(true);
+        try {
+            // Register receiver in the backend to generate Web3Auth Wallet
+            const response = await TransferService.createRecipient({
+                nom: data.nom,
+                prenom: data.prenom,
+                iban: data.iban
+            });
 
-        // Navigate to Confirmation Beneficiary
-        router.push("/sender-home/confirmation-beneficiary");
+            // Expected response: { id: "xxx", wuraId: "WURA-1234", ... }
+            const realWuraId = response.receiver?.wuraId || response.wuraId || `${data.prenom.replace(/\s+/g, '')}${data.nom.charAt(0).toUpperCase()}`;
+
+            // Save the new beneficiary in the global context
+            setRecipient({
+                id: response.id || `new-${Date.now()}`,
+                wuraId: realWuraId,
+                nom: data.nom,
+                prenom: data.prenom,
+                iban: data.iban,
+                bic: data.bic,
+                banque: data.banque,
+                pays: selectedCountry.name,
+                isNew: true
+            });
+
+            // Navigate to Confirmation Beneficiary
+            router.push("/sender-home/confirmation-beneficiary");
+        } catch (error) {
+            console.error("Erreur lors de la création du bénéficiaire:", error);
+            alert("Une erreur est survenue lors de l'enregistrement du bénéficiaire.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -286,10 +307,16 @@ export default function AddBeneficiaryScreen() {
                     <View className="h-1 w-full bg-gradient-to-t from-background-light to-transparent absolute top-0" />
                     <TouchableOpacity
                         onPress={handleSubmit(onSubmit)}
-                        className="w-full bg-[#064E3B] py-4 rounded-xl shadow-lg shadow-emerald-900/20 flex-row items-center justify-center gap-2 active:scale-[0.98]"
+                        disabled={isSubmitting}
+                        className={clsx(
+                            "w-full bg-[#064E3B] py-4 rounded-xl shadow-lg shadow-emerald-900/20 flex-row items-center justify-center gap-2 active:scale-[0.98]",
+                            isSubmitting && "opacity-70"
+                        )}
                     >
-                        <Text className="text-white font-medium text-lg">Vérifier</Text>
-                        <ArrowRight size={18} color="white" className="opacity-70" />
+                        <Text className="text-white font-medium text-lg">
+                            {isSubmitting ? "Création..." : "Vérifier"}
+                        </Text>
+                        {!isSubmitting && <ArrowRight size={18} color="white" className="opacity-70" />}
                     </TouchableOpacity>
                 </View>
 

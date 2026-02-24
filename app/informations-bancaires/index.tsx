@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { ArrowRight, Building2, CreditCard, Lock, User, Wallet } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import {  Image,  ScrollView, Text, TextInput, TouchableOpacity, View  } from "react-native"
+import { Image, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Rect } from "react-native-svg";
 
@@ -11,14 +11,14 @@ export default function BankInfoScreen() {
     const isDark = colorScheme === "dark";
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
+        <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-background">
             <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                 <View className="flex-1 px-6 pt-2 pb-12">
                     {/* Header */}
                     <View className="mb-2 flex-col items-center gap-1 text-center">
                         <Image
                             source={isDark ? require("../../assets/images/wuraa-removebg-logoVersionDark.png") : require("../../assets/images/wuralogo-removebg-preview.png")}
-                            style={{ width: 400, height: 110 }}
+                            style={{ width: 280, height: 80 }}
                             resizeMode="contain"
                         />
                         <Text className="mt-1 text-2xl font-bold text-foreground text-center">

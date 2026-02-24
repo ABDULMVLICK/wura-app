@@ -40,7 +40,7 @@ const defaultState: TransferState = {
 
 const TransferContext = createContext<TransferContextType | undefined>(undefined);
 
-const EXCHANGE_RATE_XOF_TO_EUR = 655.95;
+const EXCHANGE_RATE_XOF_TO_EUR = 655.96;
 
 export const TransferProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, setState] = useState<TransferState>(defaultState);
@@ -50,13 +50,9 @@ export const TransferProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setState(prev => {
             if (!prev.quote) return prev; // Cannot swap safely without a quote
 
-            // If swapping, we take the calculated value of the OTHER currency from the quote as the new input
-            let newValue = prev.inputCurrency === 'XOF'
-                ? prev.quote.montant_euro_recu_par_jean.toString()
-                : prev.quote.montant_cfa_total_a_payer.toString(); // Wait, it's better to just swap the raw logic roughly so they don't get trapped by fees here.
-
             // Revert back roughly
             const numericValue = parseFloat(prev.inputValue.replace(/,/g, '.').replace(/\s/g, '')) || 0;
+            let newValue = "";
             if (prev.inputCurrency === 'XOF') {
                 newValue = (numericValue / EXCHANGE_RATE_XOF_TO_EUR).toFixed(2);
             } else {
@@ -104,26 +100,24 @@ export const TransferProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Business Logic Calculators (Now using the fetched quote)
     const getCalculatedXOF = () => {
         if (!state.quote) return "0";
-        // If they input XOF, return exactly what they typed. If EUR, return what they pay before fees.
-        // Actually, montant_cfa_total_a_payer is the total including fees. 
-        // We usually want the base amount here.
-        const baseAmount = state.quote.montant_cfa_total_a_payer - state.quote.frais_mobiles_cfa;
+        // If they input XOF, return exactly what they typed. If EUR, return base amount before fees.
+        const baseAmount = Number(state.quote.baseAmountCfa || 0);
         return baseAmount.toString();
     };
 
     const getCalculatedEUR = () => {
         if (!state.quote) return "0.00";
-        return state.quote.montant_euro_recu_par_jean.toFixed(2);
+        return Number(state.quote.montant_euro_recu_par_jean || 0).toFixed(2);
     };
 
     const getFeesXOF = () => {
         if (!state.quote) return "0";
-        return state.quote.frais_mobiles_cfa.toString();
+        return state.quote.kkiapayFeeCfa.toString();
     };
 
     const getTotalXOF = () => {
         if (!state.quote) return "0";
-        return state.quote.montant_cfa_total_a_payer.toString();
+        return Number(state.quote.totalToPayCfa || 0).toString();
     };
 
     return (

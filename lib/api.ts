@@ -2,7 +2,6 @@ import { getIdToken, signOut } from '@react-native-firebase/auth';
 import axios from 'axios';
 import { router } from 'expo-router';
 import { auth } from './firebase';
-
 const api = axios.create({
     baseURL: process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.114:3000',
     timeout: 10000,

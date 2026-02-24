@@ -13,7 +13,7 @@ export const AuthService = {
     /**
      * Enregistrer un bénéficiaire (Receiver) dans la base de données après Firebase Auth
      */
-    registerReceiver: async (data: { firstName: string, lastName: string }) => {
+    registerReceiver: async (data: { firstName: string, lastName: string, web3AuthWalletAddress?: string }) => {
         const response = await api.post('/users/register/receiver', data);
         return response.data;
     },

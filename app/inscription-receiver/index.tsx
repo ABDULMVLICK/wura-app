@@ -6,6 +6,8 @@ import { useColorScheme } from "nativewind";
 import { useState } from "react";
 import { ActivityIndicator, Alert, Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
+import { useWeb3Auth } from "../../contexts/Web3AuthContext";
 import { auth } from "../../lib/firebase";
 import { AuthService } from "../../services/auth";
 
@@ -21,39 +23,43 @@ export default function ReceiverSignupScreen() {
     const isDark = colorScheme === "dark";
     const [loading, setLoading] = useState(false);
 
+    const { loginWithGoogle } = useWeb3Auth();
+
     const handleGoogleSignup = async () => {
         setLoading(true);
         try {
-            // Vérifie que Google Play Services est disponible
-            await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+            // 1. Lance la connexion Google via Web3Auth et crée le wallet
+            const web3AuthResult = await loginWithGoogle();
 
-            // Ouvre le popup Google
-            const signInResult = await GoogleSignin.signIn();
-
-            const idToken = signInResult?.data?.idToken;
-            if (!idToken) {
-                throw new Error("Impossible de récupérer le token Google.");
+            if (!web3AuthResult || !web3AuthResult.userInfo?.oAuthIdToken) {
+                throw new Error("Impossible de récupérer le token Google depuis Web3Auth.");
             }
 
-            // Crée un credential Firebase avec le token Google
-            const googleCredential = GoogleAuthProvider.credential(idToken);
+            const { address, userInfo } = web3AuthResult;
 
-            // Connecte l'utilisateur à Firebase
+            // 2. Transfère le token Google à Firebase pour authentifier le Mobile
+            const googleCredential = GoogleAuthProvider.credential(userInfo.oAuthIdToken);
             const userCredential = await signInWithCredential(auth, googleCredential);
             const user = userCredential.user;
 
-            // Crée le profil dans PostgreSQL (NestJS)
+            // 3. Crée le profil PostgreSQL en lui liant l'adresse Blockchain générée
             await AuthService.registerReceiver({
                 firstName: user.displayName?.split(" ")[0] || "",
                 lastName: user.displayName?.split(" ").slice(1).join(" ") || "",
+                web3AuthWalletAddress: address,
             });
 
-            // Redirige vers la page de création du wuraId
+            Toast.show({
+                type: 'success',
+                text1: 'Wallet Généré',
+                text2: `Adresse: ${address.substring(0, 8)}...`
+            });
+
+            // 4. Termine le Onboarding
             router.replace("/wura-id");
         } catch (error: any) {
             console.error("Erreur Google Sign-In:", error);
 
-            // Si l'utilisateur a été créé dans Auth mais que Firestore a échoué
             if (auth.currentUser && error.message?.includes("permission-denied")) {
                 try {
                     await auth.currentUser.delete();
@@ -65,7 +71,7 @@ export default function ReceiverSignupScreen() {
             if (error.code !== "SIGN_IN_CANCELLED" && error.code !== "12501") {
                 Alert.alert(
                     "Erreur d'inscription",
-                    error?.message || "Impossible de finaliser l'inscription avec Google."
+                    error?.message || "Impossible de finaliser l'inscription."
                 );
             }
         } finally {
@@ -74,7 +80,7 @@ export default function ReceiverSignupScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
+        <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-background">
             <View className="flex-1 items-center justify-center p-4">
                 <View className="w-full max-w-md flex-col gap-3 rounded-3xl bg-muted px-6 py-4">
                     {/* Back button */}
@@ -90,7 +96,7 @@ export default function ReceiverSignupScreen() {
                     <View className="items-center gap-1">
                         <Image
                             source={isDark ? require("../../assets/images/wuraa-removebg-logoVersionDark.png") : require("../../assets/images/wuralogo-removebg-preview.png")}
-                            style={{ width: 400, height: 110 }}
+                            style={{ width: 280, height: 80 }}
                             resizeMode="contain"
                         />
                         <Text className="text-sm text-muted-foreground text-center">

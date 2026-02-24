@@ -34,7 +34,7 @@ export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             // Format API data to match the UI expected structure
             const formattedHistory: any[] = history.map((tx: any) => ({
                 id: tx.referenceId || tx.id,
-                amountEUR: tx.amountFiatOutExpected || tx.amountEUR || 0,
+                amountEUR: Number(tx.amountFiatOutExpected || tx.amountEUR || 0),
                 senderName: tx.sender?.prenom ? `${tx.sender.prenom} ${tx.sender.nom}` : "Utilisateur Wura",
                 date: new Date(tx.createdAt || tx.date || Date.now()),
                 status: tx.status

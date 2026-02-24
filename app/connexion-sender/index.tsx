@@ -100,7 +100,7 @@ export default function SenderLoginScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
+        <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-background">
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 className="flex-1"
@@ -127,7 +127,7 @@ export default function SenderLoginScreen() {
                         <View className="items-center gap-1">
                             <Image
                                 source={isDark ? require("../../assets/images/wuraa-removebg-logoVersionDark.png") : require("../../assets/images/wuralogo-removebg-preview.png")}
-                                style={{ width: 400, height: 110 }}
+                                style={{ width: 280, height: 80 }}
                                 resizeMode="contain"
                             />
                             <Text className="text-sm text-muted-foreground text-center">
