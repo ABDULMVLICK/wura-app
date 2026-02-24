@@ -79,7 +79,8 @@
             ]
           },
           "android": {
-            "usesCleartextTraffic": true
+            "usesCleartextTraffic": true,
+            "ndkVersion": "25.1.8937393"
           }
         }
       ]
