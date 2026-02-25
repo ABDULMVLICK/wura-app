@@ -11,7 +11,7 @@ const scheme = "wuranative";
 const resolvedRedirectUrl = `${scheme}://openlogin`;
 
 // Replace with Web3Auth Client ID
-const clientId = "BI4LxuDfZdoDO5CNTN0qiUJe3PQ7g24IDC-wm-3pXsZICtQMQlOY1OMIcK6mBH7vnfDoLhQSUwtIVfhHErmNIwo";
+const clientId = "BDBaTLT7AGbH2PBnLMBdZvhd2xLsWd7sosCiKbE5rfhEy0G_FxEgdHiZ4aHVP0m4L6sDRhFrFGkGLiLS4ji1Y5E";
 
 export interface Web3AuthContextType {
     web3auth: Web3Auth | null;
