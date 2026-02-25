@@ -4,7 +4,9 @@ global.process = require('process/browser.js');
 
 // 2. Crypto Polyfills that depend on Buffer
 require('react-native-quick-base64');
-require('react-native-quick-crypto');
+// install() patches global.crypto with randomBytes support (required by Web3Auth)
+const { install } = require('react-native-quick-crypto');
+install();
 
 // Btoa/Atob Polyfills
 if (typeof btoa === 'undefined') {

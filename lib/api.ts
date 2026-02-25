@@ -27,9 +27,10 @@ api.interceptors.response.use(
     (response) => response,
     async (error) => {
         if (error.response && error.response.status === 401) {
-            // Token expiré ou invalide
-            await signOut(auth);
-            // Redirige vers l'écran d'accueil pour forcer la reconnexion
+            // Token expiré ou invalide (guard: only signOut if a user is currently signed in)
+            if (auth.currentUser) {
+                await signOut(auth);
+            }
             router.replace('/choix');
         }
         return Promise.reject(error);
