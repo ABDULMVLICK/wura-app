@@ -8,7 +8,10 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build:ios": "COPYFILE_DISABLE=1 eas build --platform ios",
+    "build:android": "COPYFILE_DISABLE=1 eas build --platform android",
+    "build:all": "COPYFILE_DISABLE=1 eas build --platform all"
   },
   "dependencies": {
     "@expo/vector-icons": "~14.0.4",
@@ -26,8 +29,8 @@
     "axios": "1.6.8",
     "clsx": "^2.1.1",
     "ethers": "6",
-    "expo": "~52.0.7",
-    "expo-build-properties": "~0.13.1",
+    "expo": "^52",
+    "expo-build-properties": "^0.13",
     "expo-clipboard": "~7.0.0",
     "expo-constants": "~17.0.8",
     "expo-dev-client": "~5.0.4",

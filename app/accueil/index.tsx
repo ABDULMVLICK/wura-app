@@ -1,8 +1,10 @@
 import { useRouter } from "expo-router";
 import { ArrowUpRight, Bell, QrCode, User } from "lucide-react-native";
+import { useState } from "react";
 import { Dimensions, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomTabBar } from "../../components/BottomTabBar";
+import { TransakOffRamp } from "../../components/TransakOffRamp";
 import { useAuth } from "../../contexts/AuthContext";
 import { useReceiver } from "../../contexts/ReceiverContext";
 
@@ -13,6 +15,7 @@ export default function HomeScreen() {
     const router = useRouter();
     const { state } = useReceiver();
     const { profile } = useAuth();
+    const [transakVisible, setTransakVisible] = useState(false);
     const balance = state.balanceEUR;
 
     return (
@@ -64,7 +67,7 @@ export default function HomeScreen() {
 
                                 <View className="w-full flex-row items-center justify-center gap-4">
                                     <TouchableOpacity
-                                        onPress={() => router.push("/retrait-banque")}
+                                        onPress={() => setTransakVisible(true)}
                                         className="flex-row w-full items-center justify-center gap-2 rounded-2xl bg-white/20 py-3"
                                     >
                                         <ArrowUpRight size={20} color="white" />
@@ -110,6 +113,11 @@ export default function HomeScreen() {
 
                 <BottomTabBar />
             </View>
+
+            <TransakOffRamp
+                visible={transakVisible}
+                onClose={() => setTransakVisible(false)}
+            />
         </SafeAreaView>
     );
 }

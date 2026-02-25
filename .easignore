@@ -1,0 +1,27 @@
+# macOS metadata
+.DS_Store
+**/.DS_Store
+._*
+
+# Expo cache (recréé au build)
+.expo/
+
+# Editeurs
+*.swp
+*.swo
+*.orig
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Tests & docs non nécessaires au build
+__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Submodule backend (pas besoin côté app mobile)
+wura-api/
