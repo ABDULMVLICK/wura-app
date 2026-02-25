@@ -28,34 +28,45 @@ export default function ReceiverSignupScreen() {
     const handleGoogleSignup = async () => {
         setLoading(true);
         try {
-            // 1. Lance la connexion Google via Web3Auth et crée le wallet
-            const web3AuthResult = await loginWithGoogle();
+            // 1. Google Sign-In natif pour obtenir le token Google
+            await GoogleSignin.hasPlayServices();
+            const signInResult = await GoogleSignin.signIn();
+            const googleIdToken = signInResult?.data?.idToken;
 
-            if (!web3AuthResult || !web3AuthResult.userInfo?.oAuthIdToken) {
-                throw new Error("Impossible de récupérer le token Google depuis Web3Auth.");
+            if (!googleIdToken) {
+                throw new Error("Impossible de récupérer le token Google.");
             }
 
-            const { address, userInfo } = web3AuthResult;
-
-            // 2. Transfère le token Google à Firebase pour authentifier le Mobile
-            const googleCredential = GoogleAuthProvider.credential(userInfo.oAuthIdToken);
+            // 2. Authentification Firebase avec le token Google
+            const googleCredential = GoogleAuthProvider.credential(googleIdToken);
             const userCredential = await signInWithCredential(auth, googleCredential);
             const user = userCredential.user;
 
-            // 3. Crée le profil PostgreSQL en lui liant l'adresse Blockchain générée
+            // 3. Création du wallet via Web3Auth (en arrière-plan)
+            let walletAddress = "";
+            try {
+                const web3AuthResult = await loginWithGoogle();
+                if (web3AuthResult?.address) {
+                    walletAddress = web3AuthResult.address;
+                }
+            } catch (walletError: any) {
+                console.warn("[Signup] Web3Auth wallet creation failed, continuing without wallet:", walletError.message);
+            }
+
+            // 4. Crée le profil PostgreSQL
             await AuthService.registerReceiver({
                 firstName: user.displayName?.split(" ")[0] || "",
                 lastName: user.displayName?.split(" ").slice(1).join(" ") || "",
-                web3AuthWalletAddress: address,
+                web3AuthWalletAddress: walletAddress,
             });
 
             Toast.show({
                 type: 'success',
-                text1: 'Wallet Généré',
-                text2: `Adresse: ${address.substring(0, 8)}...`
+                text1: walletAddress ? 'Wallet Généré' : 'Compte Créé',
+                text2: walletAddress ? `Adresse: ${walletAddress.substring(0, 8)}...` : 'Bienvenue sur Wura!'
             });
 
-            // 4. Termine le Onboarding
+            // 5. Termine le Onboarding
             router.replace("/wura-id");
         } catch (error: any) {
             console.error("Erreur Google Sign-In:", error);

@@ -21,7 +21,7 @@ export default function SenderProfileScreen() {
         {
             icon: FileText,
             label: "Historique des transactions",
-            route: "/sender-home/history", // Placeholder
+            route: "/sender-home/historique",
             color: "#059669"
         },
         {
@@ -102,7 +102,7 @@ export default function SenderProfileScreen() {
                         {menuItems.map((item, index) => (
                             <TouchableOpacity
                                 key={index}
-                                onPress={() => item.route === "/sender-home/edition" ? router.push("/sender-home/edition") : null}
+                                onPress={() => router.push(item.route as any)}
                                 className={`flex-row items-center justify-between p-4 ${index !== menuItems.length - 1 ? 'border-b border-gray-100 dark:border-white/5' : ''}`}
                             >
                                 <View className="flex-row items-center gap-4">

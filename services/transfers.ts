@@ -76,5 +76,13 @@ export const TransferService = {
     getClaimInfo: async (referenceId: string) => {
         const response = await api.get(`/public-transactions/claim/${referenceId}`);
         return response.data;
+    },
+
+    /**
+     * Demander un remboursement pour une transaction échouée
+     */
+    requestRefund: async (transactionId: string) => {
+        const response = await api.post(`/transactions/${transactionId}/refund`);
+        return response.data;
     }
 };

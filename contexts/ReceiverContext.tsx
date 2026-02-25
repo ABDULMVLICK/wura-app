@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { TransferService } from '../services/transfers';
 import { TransactionInfo } from '../types/transaction';
+import { useAuth } from './AuthContext';
 
 export interface ReceiverState {
     balanceEUR: number;
@@ -25,8 +26,14 @@ const ReceiverContext = createContext<ReceiverContextType | undefined>(undefined
 
 export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, setState] = useState<ReceiverState>(defaultState);
+    const { user } = useAuth();
 
     const refreshBalance = async () => {
+        // Only fetch if a user is authenticated
+        if (!user) {
+            setState(prev => ({ ...prev, isLoading: false }));
+            return;
+        }
         setState(prev => ({ ...prev, isLoading: true }));
         try {
             const history = await TransferService.getHistory();
@@ -40,23 +47,35 @@ export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 status: tx.status
             }));
 
-            // Optional: calculate balance from history if needed, 
-            // for now balance is forced to 0 as requested by user.
+            // Calculate balance from fully completed transactions only
+            const totalReceived = formattedHistory
+                .filter((tx: any) => tx.status === 'COMPLETED')
+                .reduce((sum: number, tx: any) => sum + tx.amountEUR, 0);
+
             setState(prev => ({
                 ...prev,
                 recentTransactions: formattedHistory,
-                balanceEUR: 0.00, // Force balance to 0 EUR 
+                balanceEUR: totalReceived,
                 isLoading: false
             }));
         } catch (error) {
-            console.error("Failed to fetch receiver history:", error);
+            // Silently handle polling errors to avoid console spam
+            console.warn("Receiver refresh failed (will retry)");
             setState(prev => ({ ...prev, isLoading: false }));
         }
     };
 
     useEffect(() => {
         refreshBalance();
-    }, []);
+
+        // Auto-refresh toutes les 15 secondes pour détecter les nouvelles transactions
+        const interval = setInterval(() => {
+            if (user) refreshBalance();
+        }, 15000);
+
+        return () => clearInterval(interval);
+    }, [user]);
+
 
     const initiateWithdrawal = async (amount: number): Promise<boolean> => {
         // Mock API call to initiate the Off-Ramp process (Mt Pelerin / Ramp)

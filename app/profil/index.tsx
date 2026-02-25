@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { Bell, ChevronRight, CreditCard, Edit2, LogOut, Moon, Settings, Shield, Sun, User } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import {  Image,  ScrollView, Switch, Text, TouchableOpacity, View  } from "react-native"
+import { ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomTabBar } from "../../components/BottomTabBar";
 import { useAuth } from "../../contexts/AuthContext";
@@ -64,12 +64,10 @@ export default function ProfileScreen() {
                         {/* Profile Card */}
                         <View className="items-center mb-8">
                             <View className="relative mb-4">
-                                <View className="h-28 w-28 rounded-full bg-muted items-center justify-center overflow-hidden border-4 border-card shadow-sm">
-                                    <Image
-                                        source={{ uri: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" }}
-                                        className="h-full w-full"
-                                        resizeMode="cover"
-                                    />
+                                <View className="h-28 w-28 rounded-full bg-[#F59E0B]/20 items-center justify-center border-4 border-card shadow-sm">
+                                    <Text className="text-5xl font-bold text-[#F59E0B]">
+                                        {(profile?.email || profile?.prenom || "U").charAt(0).toUpperCase()}
+                                    </Text>
                                 </View>
                                 <TouchableOpacity
                                     onPress={() => router.push("/profil/edition")}

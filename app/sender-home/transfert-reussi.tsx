@@ -1,8 +1,8 @@
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Check, ChevronLeft, Copy, Download, Share2 } from "lucide-react-native";
+import { AlertTriangle, Check, ChevronLeft, Copy, Download, RefreshCw, Share2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, Share, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, ScrollView, Share, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTransfer } from "../../contexts/TransferContext";
 import { deleteSecureData, getSecureData } from "../../lib/storage";
@@ -58,7 +58,7 @@ export default function TransfertReussiScreen() {
                 setTxData(tx);
 
                 // Si la transaction est dans un état final, on arrête le polling
-                if (tx.status === "PAYOUT_SUCCESS" || tx.status === "FAILED" || tx.status === "CANCELLED") {
+                if (tx.status === "COMPLETED" || tx.status === "PAYIN_FAILED" || tx.status === "BRIDGE_FAILED" || tx.status === "OFFRAMP_FAILED") {
                     clearInterval(intervalId);
                 }
             } catch (error) {
@@ -103,7 +103,7 @@ export default function TransfertReussiScreen() {
             <View className="flex-1 flex flex-col">
 
                 {/* Confetti (Simulated with static views for now) */}
-                {status === "PAYOUT_SUCCESS" && (
+                {status === "COMPLETED" && (
                     <View className="absolute inset-0 overflow-hidden pointer-events-none z-0">
                         <View className="absolute top-20 right-10 w-2 h-2 rounded-full bg-[#F59E0B]/60" />
                         <View className="absolute top-28 right-5 w-3 h-1 -rotate-12 bg-yellow-400" />
@@ -124,10 +124,10 @@ export default function TransfertReussiScreen() {
                         <View className="mt-8 mb-6 relative items-center justify-center">
                             <View className="absolute w-32 h-32 bg-[#F59E0B]/30 rounded-full opacity-50" />
                             <View className="relative bg-white dark:bg-[#2A2216] w-32 h-32 rounded-full shadow-lg flex items-center justify-center border border-[#F59E0B]/20 z-10">
-                                {status === "PAYOUT_SUCCESS" ? (
+                                {status === "COMPLETED" ? (
                                     <Check size={48} className="text-[#F59E0B]" color="#F59E0B" strokeWidth={3} />
-                                ) : status === "FAILED" || status === "CANCELLED" || status === "PAYIN_FAILED" ? (
-                                    <Text className="text-[#EF4444] font-bold text-4xl">X</Text>
+                                ) : status === "PAYIN_FAILED" || status === "BRIDGE_FAILED" || status === "OFFRAMP_FAILED" ? (
+                                    <AlertTriangle size={48} color="#EF4444" />
                                 ) : (
                                     <ActivityIndicator size="large" color="#F59E0B" />
                                 )}
@@ -138,21 +138,55 @@ export default function TransfertReussiScreen() {
                         <View className="text-center w-full items-center space-y-4">
                             <Text className="text-[24px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight text-center mb-4">
                                 {status === "INITIATED" || status === "PAYIN_PENDING" ? "Attente du paiement mobile..."
-                                    : status === "PAYIN_SUCCESS" || status === "PAYOUT_PENDING" ? `Transfert vers ${destinationCountry} en cours...`
-                                        : status === "PAYOUT_SUCCESS" ? "Transfert réussi !"
-                                            : "Échec du transfert."
+                                    : status === "PAYIN_SUCCESS" || status === "BRIDGE_PROCESSING" ? `Transfert vers ${destinationCountry} en cours...`
+                                        : status === "BRIDGE_SUCCESS" || status === "WAITING_USER_OFFRAMP" || status === "OFFRAMP_PROCESSING" ? "Conversion en cours..."
+                                            : status === "COMPLETED" ? "Transfert réussi !"
+                                                : "Échec du transfert."
                                 }
                             </Text>
 
                             <View className="bg-[#FDFBF7] dark:bg-[#2A2216] rounded-2xl p-4 border border-gray-100 dark:border-gray-800/50 shadow-sm mx-2 w-full">
                                 <Text className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed font-medium text-center">
-                                    {status === "PAYOUT_SUCCESS" ? "Vous avez envoyé" : "Envoi de"} {"\n"}
+                                    {status === "COMPLETED" ? "Vous avez envoyé" : status === "REFUNDED" ? "Remboursé" : "Envoi de"} {"\n"}
                                     <Text className="text-3xl font-extrabold text-[#F59E0B] dark:text-[#F59E0B] tracking-tight block mt-1 mb-1">
                                         {formattedAmount} FCFA
                                     </Text>{"\n"}
                                     à <Text className="font-bold text-gray-900 dark:text-white">{recipientHandle}</Text>
                                 </Text>
                             </View>
+
+                            {/* Failure Action Buttons */}
+                            {(status === "PAYIN_FAILED" || status === "BRIDGE_FAILED" || status === "OFFRAMP_FAILED") && (
+                                <View className="w-full mt-4 gap-3">
+                                    <TouchableOpacity
+                                        onPress={async () => {
+                                            try {
+                                                Alert.alert("Remboursement", "Envoi de la demande en cours...");
+                                                await TransferService.requestRefund(transactionId);
+                                                setStatus("REFUNDED");
+                                                Alert.alert("✅ Remboursé", "Votre remboursement a été traité avec succès. L'argent sera recrédité sur votre compte mobile.");
+                                            } catch (error: any) {
+                                                Alert.alert("Erreur", error.response?.data?.message || "Impossible de traiter le remboursement.");
+                                            }
+                                        }}
+                                        className="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 py-3.5 rounded-xl flex-row items-center justify-center gap-2 active:scale-[0.98]"
+                                    >
+                                        <AlertTriangle size={18} color="#EF4444" />
+                                        <Text className="text-red-600 dark:text-red-400 font-bold text-base">Demander un remboursement</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            resetTransfer();
+                                            router.replace("/sender-home");
+                                        }}
+                                        className="w-full bg-[#064E3B] py-3.5 rounded-xl flex-row items-center justify-center gap-2 active:scale-[0.98] shadow-lg shadow-emerald-900/10"
+                                    >
+                                        <RefreshCw size={18} color="white" />
+                                        <Text className="text-white font-bold text-base">Réessayer le transfert</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
                         </View>
 
                         {/* Details Card */}
@@ -191,7 +225,7 @@ export default function TransfertReussiScreen() {
                         </View>
 
                         {/* Share Shareable Link Section (Primary Action) */}
-                        {(status === "PAYOUT_SUCCESS" || status === "PAYIN_SUCCESS" || status === "WAITING_USER_OFFRAMP" || status === "WAITING_FOR_RECEIVER") && isNewBeneficiary && (
+                        {(status === "COMPLETED" || status === "PAYIN_SUCCESS" || status === "WAITING_USER_OFFRAMP" || status === "BRIDGE_SUCCESS") && isNewBeneficiary && (
                             <View className="w-full mt-6 bg-[#FDFBF7] dark:bg-[#2A2216] rounded-2xl p-5 border border-[#F59E0B]/30 shadow-sm relative overflow-hidden">
                                 <View className="absolute top-0 right-0 w-32 h-32 bg-[#F59E0B]/5 rounded-bl-full" />
 

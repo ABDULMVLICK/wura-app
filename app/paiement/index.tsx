@@ -2,7 +2,7 @@ import { clsx } from "clsx";
 import { useRouter } from "expo-router";
 import { ArrowRight, ChevronLeft, ShieldCheck } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTransfer } from "../../contexts/TransferContext";
 import { saveSecureData } from "../../lib/storage";
@@ -72,7 +72,9 @@ function formatAmount(value: number): string {
 import { useKkiapay } from "@kkiapay-org/react-native-sdk";
 import { TransferService } from "../../services/transfers";
 
-// ... (keep PAYMENT_METHODS and formatAmount)
+const KKIAPAY_PUBLIC_KEY = process.env.EXPO_PUBLIC_KKIAPAY_PUBLIC_KEY || "98bcfc8010c511f191e717946c2b76f5";
+
+
 
 export default function PaiementScreen() {
     const router = useRouter();
@@ -87,7 +89,6 @@ export default function PaiementScreen() {
     // Effet séparé pour la navigation afin d'éviter les crashs Expo Router
     useEffect(() => {
         if (shouldNavigateId) {
-            // InteractionManager ou long timeout pour être sûr que React Native a repris la main
             const timer = setTimeout(() => {
                 router.replace({
                     pathname: "/sender-home/transfert-reussi",
@@ -110,8 +111,6 @@ export default function PaiementScreen() {
             setLoading(false);
 
             if (pendingTxRef.current) {
-                // Toujours naviguer vers l'écran de statut (qui fait du Polling)
-                // Cela évite de rester bloqué sur l'écran si l'événement 'Success' du FrontEnd échoue
                 setShouldNavigateId(pendingTxRef.current);
                 pendingTxRef.current = null;
                 paymentSuccessRef.current = false;
@@ -123,7 +122,15 @@ export default function PaiementScreen() {
 
     const handlePayment = async () => {
         const method = PAYMENT_METHODS.find(m => m.id === selected);
-        if (!method || !state.recipient) return;
+        console.log("[Payment] handlePayment called. method:", method?.id, "recipient:", state.recipient?.prenom, "amount:", amount);
+        if (!method) {
+            Alert.alert("Erreur", "Veuillez sélectionner un mode de paiement.");
+            return;
+        }
+        if (!state.recipient) {
+            Alert.alert("Erreur", "Aucun bénéficiaire sélectionné. Veuillez recommencer le transfert.");
+            return;
+        }
 
         setPaymentMethod({
             id: method.id,
@@ -133,6 +140,7 @@ export default function PaiementScreen() {
 
         setLoading(true);
         try {
+            console.log("[Payment] Step 1: Creating transaction...");
             // Création de la transaction en base de données (Statut INITIATED)
             const tx = await TransferService.createTransaction({
                 amountFCFA: amount,
@@ -142,22 +150,30 @@ export default function PaiementScreen() {
                 deliverySpeed: state.deliverySpeed
             });
 
+            console.log("[Payment] Step 2: Transaction created:", tx.id, tx.referenceId);
             pendingTxRef.current = tx.id;
             await saveSecureData('pendingKkiapayTx', tx.id);
             await saveSecureData('pendingKkiapayCountry', state.recipient.pays || "le pays du bénéficiaire");
 
             // Ouverture du widget Kkiapay pour valider le paiement mobile
+            console.log("[Payment] Opening Kkiapay widget, key:", KKIAPAY_PUBLIC_KEY.substring(0, 8) + "...");
             openKkiapayWidget({
                 amount: amount,
-                key: process.env.EXPO_PUBLIC_KKIAPAY_PUBLIC_KEY || "",
+                key: KKIAPAY_PUBLIC_KEY,
                 sandbox: true,
                 reason: "Envoi Wura vers " + state.recipient.prenom,
-                data: tx.referenceId // l'ID court "TX-XXX" attendu par le webhook
+                data: tx.referenceId
             });
+            console.log("[Payment] Step 4: openKkiapayWidget called successfully");
 
-        } catch (error) {
-            console.error("Erreur lors de l'initiation de la transaction:", error);
+        } catch (error: any) {
+            console.error("[Payment] ❌ Error:", error?.message);
+            console.error("[Payment] Error response:", error?.response?.data);
             setLoading(false);
+            Alert.alert(
+                "Erreur de paiement",
+                error?.response?.data?.message || error?.message || "Impossible de créer la transaction. Réessayez."
+            );
         }
     };
 

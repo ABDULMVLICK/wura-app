@@ -38,10 +38,22 @@ export default function SenderSignupScreen() {
             setStep("otp");
         } catch (error: any) {
             console.error("Erreur envoi SMS:", error);
-            Alert.alert(
-                "Erreur",
-                error?.message || "Impossible d'envoyer le code. Vérifiez le numéro de téléphone."
-            );
+            const errorMessage = error?.message || "";
+            if (errorMessage.includes("BILLING_NOT_ENABLED") || errorMessage.includes("billing-not")) {
+                Alert.alert(
+                    "Firebase Billing requis",
+                    "L'envoi de SMS nécessite le plan Blaze (payant) sur Firebase.\n\n" +
+                    "Pour développer sans payer :\n" +
+                    "1. Va sur Firebase Console → Authentication → Sign-in method → Phone\n" +
+                    "2. Ajoute un numéro de test (ex: +33 6 12 34 56 78 / code: 123456)\n" +
+                    "3. Réessaie avec ce numéro"
+                );
+            } else {
+                Alert.alert(
+                    "Erreur",
+                    error?.message || "Impossible d'envoyer le code. Vérifiez le numéro de téléphone."
+                );
+            }
         } finally {
             setLoading(false);
         }

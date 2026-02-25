@@ -6,51 +6,8 @@ import { BottomTabBar } from "../../components/BottomTabBar";
 import { useAuth } from "../../contexts/AuthContext";
 import { useReceiver } from "../../contexts/ReceiverContext";
 
-// Mock Data for Transactions
-const TRANSACTIONS = [
-    {
-        id: 1,
-        name: "Moussa Diop",
-        type: "received",
-        amount: "+ 150.00 €",
-        date: "Aujourd'hui, 14:30",
-        wuraId: "@MoussaD",
-        avatarColor: "bg-blue-100",
-        avatarInitialColor: "text-blue-600"
-    },
-    {
-        id: 2,
-        name: "Carrefour Market",
-        type: "spent",
-        amount: "- 42.50 €",
-        date: "Aujourd'hui, 10:15",
-        wuraId: "Carte **** 4212",
-        avatarColor: "bg-orange-100",
-        avatarInitialColor: "text-orange-600"
-    },
-    {
-        id: 3,
-        name: "Fatou Ndiaye",
-        type: "received",
-        amount: "+ 500.00 €",
-        date: "Hier, 18:45",
-        wuraId: "@FatouN",
-        avatarColor: "bg-purple-100",
-        avatarInitialColor: "text-purple-600"
-    },
-    {
-        id: 4,
-        name: "Netflix",
-        type: "spent",
-        amount: "- 17.99 €",
-        date: "Hier, 09:00",
-        wuraId: "Abonnement",
-        avatarColor: "bg-red-100",
-        avatarInitialColor: "text-red-600"
-    }
-];
-
 const { width } = Dimensions.get('window');
+
 
 export default function HomeScreen() {
     const router = useRouter();
@@ -119,24 +76,26 @@ export default function HomeScreen() {
 
                         {/* Transactions */}
                         <View className="flex-1 flex-col mt-4">
-                            <Text className="mb-4 text-lg font-bold text-foreground">Activité Récents</Text>
-                            <View className="flex-col gap-4">
+                            <View className="mb-4 flex-row items-center justify-between">
+                                <Text className="text-lg font-bold text-foreground">Activité Récente</Text>
+                                {state.recentTransactions.length > 0 && (
+                                    <TouchableOpacity onPress={() => router.push("/historique")}>
+                                        <Text className="text-sm font-semibold text-primary">Voir tout</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                            <View className="flex-col gap-3">
                                 {state.recentTransactions.length === 0 ? (
                                     <Text className="text-muted-foreground text-center py-4">Aucune transaction pour le moment.</Text>
                                 ) : (
-                                    state.recentTransactions.map((tx) => (
+                                    state.recentTransactions.slice(0, 3).map((tx) => (
                                         <TouchableOpacity
                                             key={tx.id}
                                             className="flex-row items-center justify-between rounded-2xl bg-card p-4"
                                         >
-                                            <View className="flex-row items-center gap-4">
-                                                <View className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
-                                                    <Text className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{(tx.senderName || "U").charAt(0)}</Text>
-                                                </View>
-                                                <View className="flex-col">
-                                                    <Text className="text-sm font-semibold text-foreground">{tx.senderName || "Utilisateur Wura"}</Text>
-                                                    <Text className="text-xs text-muted-foreground">Reçu • {new Date(tx.date).toLocaleDateString('fr-FR')}</Text>
-                                                </View>
+                                            <View className="flex-col">
+                                                <Text className="text-sm font-semibold text-foreground">{tx.senderName || "Utilisateur Wura"}</Text>
+                                                <Text className="text-xs text-muted-foreground">Reçu • {new Date(tx.date).toLocaleDateString('fr-FR')}</Text>
                                             </View>
                                             <Text className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                                                 + {Number(tx.amountEUR || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €

@@ -1,4 +1,5 @@
 import { GoogleAuthProvider, signInWithCredential } from "@react-native-firebase/auth";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { Link, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
@@ -9,6 +10,12 @@ import { auth } from "../../lib/firebase";
 
 import Toast from "react-native-toast-message";
 import { useWeb3Auth } from "../../contexts/Web3AuthContext";
+
+// Configure Google Sign-In
+GoogleSignin.configure({
+    webClientId: "107069302242-7gfurhktqt5etgs5u0241qsrbvcmcvce.apps.googleusercontent.com",
+    iosClientId: "107069302242-jcvddehcuprc88ab0lcb0admb52tmqko.apps.googleusercontent.com",
+});
 
 export default function ReceiverLoginScreen() {
     const router = useRouter();
@@ -21,29 +28,40 @@ export default function ReceiverLoginScreen() {
     const handleGoogleLogin = async () => {
         setLoading(true);
         try {
-            // 1. Lance la connexion Google via Web3Auth et initialise le wallet en arrière-plan
-            const web3AuthResult = await loginWithGoogle();
+            // 1. Google Sign-In natif pour obtenir le token Google
+            await GoogleSignin.hasPlayServices();
+            const signInResult = await GoogleSignin.signIn();
+            const googleIdToken = signInResult?.data?.idToken;
 
-            if (!web3AuthResult || !web3AuthResult.userInfo?.oAuthIdToken) {
-                throw new Error("Impossible de récupérer le token Google depuis Web3Auth.");
+            if (!googleIdToken) {
+                throw new Error("Impossible de récupérer le token Google.");
             }
 
-            const { address, userInfo } = web3AuthResult;
-
-            // 2. Transfère le token Google à Firebase pour authentifier le Mobile
-            const googleCredential = GoogleAuthProvider.credential(userInfo.oAuthIdToken);
+            // 2. Authentification Firebase avec le token Google
+            const googleCredential = GoogleAuthProvider.credential(googleIdToken);
             await signInWithCredential(auth, googleCredential);
+
+            // 3. Wallet Web3Auth en arrière-plan (optionnel, non bloquant)
+            let walletAddress = "";
+            try {
+                const web3AuthResult = await loginWithGoogle();
+                if (web3AuthResult?.address) {
+                    walletAddress = web3AuthResult.address;
+                }
+            } catch (walletError: any) {
+                console.warn("[Login] Web3Auth wallet failed, continuing:", walletError.message);
+            }
 
             Toast.show({
                 type: 'success',
                 text1: 'Connexion Réussie',
-                text2: `Wallet prêt : ${address.substring(0, 8)}...`
+                text2: walletAddress ? `Wallet prêt : ${walletAddress.substring(0, 8)}...` : 'Bienvenue!'
             });
 
             // La redirection est gérée automatiquement par AuthContext dans _layout.tsx
         } catch (error: any) {
             console.error("Erreur Google Sign-In:", error);
-            if (error.code !== "SIGN_IN_CANCELLED") {
+            if (error.code !== "SIGN_IN_CANCELLED" && error.code !== "12501") {
                 Alert.alert(
                     "Erreur",
                     error?.message || "Impossible de se connecter avec Google."

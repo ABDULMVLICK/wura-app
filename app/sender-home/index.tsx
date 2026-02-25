@@ -1,43 +1,64 @@
-import { clsx } from "clsx";
 import { useRouter } from "expo-router";
 import { ArrowRight, ArrowUpDown, ChevronDown, Plus } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import { useEffect, useState } from "react";
-import { Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CountrySelector, WESTERN_COUNTRIES } from "../../components/CountrySelector";
 import { useTransfer } from "../../contexts/TransferContext";
 import { deleteSecureData, getSecureData } from "../../lib/storage";
+import { TransferService } from "../../services/transfers";
 
-// Mock Data for Recents
-const RECENTS = [
-    { id: 'mk', name: 'Moussa', initial: 'MK', color: 'bg-orange-100', textColor: 'text-orange-600', type: 'initial' },
-    { id: 'amina', name: 'Amina', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBPA0u1uoVySeCrPCU9G7OiadIq0eYJZoExIGAp1fhko0vYbw7rLOjAnlmwXB3ymqj2clZYrL5njep1NWFf_-ejGB80nznehVbAyqXzhTnWK36do-9-hioD9H5FfU4O1bJr8zne81Q1AySRSImM5mewHFpasYdZwqFpLjzmDn1xe9fZ-sKBpAcDpYk4SvwPSUofRneav-9k3huWh7ih0HbJlqGnaiAoWj3T5120JPG3cW1xTFtScQcsVlSUoNaR6BVnV1MGcaas4C8', type: 'image' },
-    { id: 'seydou', name: 'Seydou', initial: 'SD', color: 'bg-purple-100', textColor: 'text-purple-600', type: 'initial' },
-    { id: 'fatou', name: 'Fatou', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDx26Ywsww5KcbV7BhhF7CXwWA9Mhd3iPsqS7CkLxRPxvTKtRkQBby4vC-CY7BcuSQFflgdhxjDsac4am5wlcOUp6ADsLInFaDKXnj_94vxjX_VvNu78QePxdaLzpMznNb2GgWYGcyq4x9p1Xpq45qT0NpS39kFaoJ0EJ5RIxLzjF9AEJcBBgU6uDMvsP_mWkKc3z6xn34IFmGWSNKiH2zJ6Iqlg3NBbMqTHjwdEgV68PmlMfxfZppVzH9AXavYvjlPB-4U1fm352M', type: 'image' },
-];
+interface RecentBeneficiary {
+    id: string;
+    name: string;
+    initial: string;
+}
 
 export default function SenderHomeScreen() {
     const router = useRouter();
     const { state: transferState, setInputValue, toggleCurrency, getCalculatedXOF, getCalculatedEUR } = useTransfer();
+    const [recentBeneficiaries, setRecentBeneficiaries] = useState<RecentBeneficiary[]>([]);
+
+    const fetchRecentBeneficiaries = useCallback(async () => {
+        try {
+            const transactions = await TransferService.getHistory();
+            const seen = new Map<string, RecentBeneficiary>();
+
+            transactions.forEach((tx: any) => {
+                const id = tx.receiver?.wuraId || tx.receiverId || "unknown";
+                if (!seen.has(id)) {
+                    const wuraId = tx.receiver?.wuraId || "";
+                    const displayName = wuraId || "Bénéficiaire";
+                    seen.set(id, {
+                        id,
+                        name: displayName,
+                        initial: displayName.replace("@", "").charAt(0).toUpperCase() || "?",
+                    });
+                }
+            });
+
+            setRecentBeneficiaries(Array.from(seen.values()).slice(0, 6));
+        } catch {
+            // Silently fail — beneficiaries are not critical
+        }
+    }, []);
 
     useEffect(() => {
         if (!transferState.inputValue) {
             setInputValue("50000");
         }
 
-        // Vérifier si un paiement Kkiapay était en cours lors d'un redémarrage / deep link
-        const checkPendingPayment = async () => {
+        const cleanupPendingPayment = async () => {
             const pendingTx = await getSecureData('pendingKkiapayTx');
             if (pendingTx) {
+                console.log("[SenderHome] Cleaning stale pendingKkiapayTx:", pendingTx);
                 await deleteSecureData('pendingKkiapayTx');
-                router.replace({
-                    pathname: "/sender-home/transfert-reussi",
-                    params: { transactionId: pendingTx }
-                });
+                await deleteSecureData('pendingKkiapayCountry');
             }
         };
-        checkPendingPayment();
+        cleanupPendingPayment();
+        fetchRecentBeneficiaries();
     }, []);
 
     const amount = transferState.inputValue;
@@ -47,10 +68,15 @@ export default function SenderHomeScreen() {
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === "dark";
 
-    // Blink animation for the cursor (visual only, if we wanted manual cursor)
-    // But TextInput handles its own cursor. We can keep the blinking bar as a custom cursor if we hide the real one, 
-    // or just use standard TextInput. The user's HTML shows a custom cursor div. 
-    // For RN, standard TextInput is safer for "pavé numérique" (system keyboard).
+    // Colors for beneficiary circles
+    const COLORS = [
+        { bg: "bg-amber-100 dark:bg-amber-900/30", text: "text-amber-600" },
+        { bg: "bg-purple-100 dark:bg-purple-900/30", text: "text-purple-600" },
+        { bg: "bg-emerald-100 dark:bg-emerald-900/30", text: "text-emerald-600" },
+        { bg: "bg-blue-100 dark:bg-blue-900/30", text: "text-blue-600" },
+        { bg: "bg-rose-100 dark:bg-rose-900/30", text: "text-rose-600" },
+        { bg: "bg-orange-100 dark:bg-orange-900/30", text: "text-orange-600" },
+    ];
 
     return (
         <SafeAreaView edges={['top']} className="flex-1 bg-white dark:bg-[#221b10]">
@@ -66,12 +92,10 @@ export default function SenderHomeScreen() {
                                 onPress={() => router.push("/sender-home/profil")}
                                 activeOpacity={0.7}
                             >
-                                <View className="w-10 h-10 rounded-full bg-gray-50 border border-gray-100 overflow-hidden">
-                                    <Image
-                                        source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBSjJ-nEaQvx0w3s2-UzHGdRJQK9RZtt1p_gYxL3GurM8c-7fxRXvMy7RtFemPXZkCfD40LA8zTfVvZlFDwQk83So-cMN4vuG4tHkhrQW3E09zNENGNi9aiAbQAqtNsvH6xAB04XSe9E8_NtRv2bh7w_hRM8Zm7VjwIMVdi4Vk8EMCZqU98TDk9h07ZFgdDKOyW9QNeKKGQZMsxboYOF5ibxYnI2hfsR0DmyxZbz4NjoFGcuxm0yTecNuI5VyJX21XF1zeMXWf5gxY" }}
-                                        className="w-full h-full"
-                                        resizeMode="cover"
-                                    />
+                                <View className="w-10 h-10 rounded-full bg-[#F59E0B]/20 items-center justify-center border border-[#F59E0B]/30">
+                                    <Text className="text-base font-bold text-[#F59E0B]">
+                                        {(transferState as any)?.senderName?.charAt(0)?.toUpperCase() || "W"}
+                                    </Text>
                                 </View>
                             </TouchableOpacity>
                         </View>
@@ -145,7 +169,7 @@ export default function SenderHomeScreen() {
                             <View className="w-full px-6 mb-6">
                                 <View className="flex-row justify-between items-center mb-4">
                                     <Text className="text-sm font-semibold text-gray-900 dark:text-white">Récents</Text>
-                                    <TouchableOpacity>
+                                    <TouchableOpacity onPress={() => router.push("/sender-home/beneficiaires")}>
                                         <Text className="text-xs font-medium text-[#064E3B]">Voir tout</Text>
                                     </TouchableOpacity>
                                 </View>
@@ -163,23 +187,27 @@ export default function SenderHomeScreen() {
                                     </View>
 
                                     {/* Recents List */}
-                                    {RECENTS.map((contact) => (
-                                        <TouchableOpacity key={contact.id} className="items-center gap-2 w-16 group">
-                                            <View className={clsx(
-                                                "w-14 h-14 rounded-full items-center justify-center overflow-hidden border-2 border-transparent",
-                                                contact.type === 'initial' ? contact.color : "bg-gray-100"
-                                            )}>
-                                                {contact.type === 'image' ? (
-                                                    <Image source={{ uri: contact.image }} className="w-full h-full" resizeMode="cover" />
-                                                ) : (
-                                                    <Text className={clsx("font-bold text-lg", contact.textColor)}>{contact.initial}</Text>
-                                                )}
-                                            </View>
-                                            <Text className="text-xs text-gray-600 dark:text-gray-300 font-medium text-center" numberOfLines={1}>
-                                                {contact.name}
+                                    {recentBeneficiaries.length === 0 ? (
+                                        <View className="items-center justify-center px-4 py-2">
+                                            <Text className="text-xs text-gray-400 dark:text-gray-500 italic">
+                                                Vos bénéficiaires récents apparaîtront ici
                                             </Text>
-                                        </TouchableOpacity>
-                                    ))}
+                                        </View>
+                                    ) : (
+                                        recentBeneficiaries.map((contact, idx) => {
+                                            const colorSet = COLORS[idx % COLORS.length];
+                                            return (
+                                                <TouchableOpacity key={contact.id} className="items-center gap-2 w-16">
+                                                    <View className={`w-14 h-14 rounded-full items-center justify-center ${colorSet.bg}`}>
+                                                        <Text className={`font-bold text-lg ${colorSet.text}`}>{contact.initial}</Text>
+                                                    </View>
+                                                    <Text className="text-xs text-gray-600 dark:text-gray-300 font-medium text-center" numberOfLines={1}>
+                                                        {contact.name}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            );
+                                        })
+                                    )}
                                 </ScrollView>
                             </View>
 

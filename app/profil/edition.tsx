@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
-import { ArrowLeft, Camera, Check, Mail, MapPin, Phone, User } from "lucide-react-native";
+import { ArrowLeft, Check, Mail, MapPin, Phone, User } from "lucide-react-native";
 import { useState } from "react";
-import {  ActivityIndicator, Image, KeyboardAvoidingView, Platform,  ScrollView, Text, TextInput, TouchableOpacity, View  } from "react-native"
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { updateUserProfile, useAuth } from "../../contexts/AuthContext";
 
@@ -62,18 +62,12 @@ export default function EditProfileScreen() {
                         {/* Avatar Edit */}
                         <View className="items-center mb-8">
                             <View className="relative">
-                                <View className="h-28 w-28 rounded-full bg-muted items-center justify-center overflow-hidden border-4 border-card shadow-sm">
-                                    <Image
-                                        source={{ uri: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" }}
-                                        className="h-full w-full"
-                                        resizeMode="cover"
-                                    />
+                                <View className="h-28 w-28 rounded-full bg-[#F59E0B]/20 items-center justify-center border-4 border-card shadow-sm">
+                                    <Text className="text-5xl font-bold text-[#F59E0B]">
+                                        {(profile?.email || profile?.prenom || "U").charAt(0).toUpperCase()}
+                                    </Text>
                                 </View>
-                                <TouchableOpacity className="absolute bottom-0 right-0 h-9 w-9 bg-primary items-center justify-center rounded-full border-4 border-background shadow-sm">
-                                    <Camera size={16} color="white" />
-                                </TouchableOpacity>
                             </View>
-                            <Text className="mt-3 text-sm font-medium text-primary">Changer la photo</Text>
                         </View>
 
                         {/* Form Fields */}

@@ -10,6 +10,7 @@ import { ReceiverProvider } from '../contexts/ReceiverContext';
 import { TransferProvider } from '../contexts/TransferContext';
 import { Web3AuthProvider } from '../contexts/Web3AuthContext';
 import "../global.css";
+import { deleteSecureData, getSecureData } from '../lib/storage';
 
 function RootLayoutNav() {
   const { user, profile, loading } = useAuth();
@@ -19,40 +20,62 @@ function RootLayoutNav() {
   useEffect(() => {
     if (loading) return;
 
-    const firstSegment = segments[0];
-    const inAuthGroup = firstSegment === "choix" ||
-      firstSegment === "inscription-sender" ||
-      firstSegment === "inscription-receiver" ||
-      firstSegment === "connexion-sender" ||
-      firstSegment === "connexion-receiver";
+    // Priorité 1: Gestion des redirections après paiement Kkiapay
+    // Le widget Kkiapay démonte et remonte l'app, on doit intercepter la transaction ici
+    const checkRedirects = async () => {
+      const pendingTx = await getSecureData('pendingKkiapayTx');
+      if (pendingTx) {
+        console.log("[RootLayout] Redirecting to success page for tx:", pendingTx);
+        await deleteSecureData('pendingKkiapayTx');
+        router.replace({
+          pathname: "/sender-home/transfert-reussi",
+          params: { transactionId: pendingTx }
+        });
+        return true;
+      }
+      return false;
+    };
 
-    const isIndex = segments.length === 0 || firstSegment === undefined;
-    const isWuraIdPage = firstSegment === "wura-id";
+    const runRouting = async () => {
+      if (await checkRedirects()) return;
 
-    if (!user && !inAuthGroup && !isIndex) {
-      // Pas connecté et pas sur une page d'auth → rediriger vers le choix
-      router.replace("/choix");
-    } else if (user && profile && inAuthGroup) {
-      // Connecté et sur une page d'auth → rediriger vers la home
-      const role = profile.role?.toLowerCase();
-      const hasWuraId = profile.wuraId || profile?.receiver?.wuraId;
-      if (role === "receiver" && !hasWuraId) {
-        // Receiver sans wuraId → doit d'abord choisir son wuraId
+      const firstSegment = segments[0];
+      const inAuthGroup = firstSegment === "choix" ||
+        firstSegment === "inscription-sender" ||
+        firstSegment === "inscription-receiver" ||
+        firstSegment === "connexion-sender" ||
+        firstSegment === "connexion-receiver";
+
+      const isIndex = segments.length === 0 || firstSegment === undefined;
+      const isWuraIdPage = firstSegment === "wura-id";
+
+      if (!user && !inAuthGroup && !isIndex) {
+        // Pas connecté et pas sur une page d'auth → rediriger vers le choix
+        router.replace("/choix");
+      } else if (user && profile && inAuthGroup) {
+        // Connecté et sur une page d'auth → rediriger vers la home
+        const role = profile.role?.toLowerCase();
+        const hasWuraId = profile.wuraId || profile?.receiver?.wuraId;
+        if (role === "receiver" && !hasWuraId) {
+          // Receiver sans wuraId → doit d'abord choisir son wuraId
+          router.replace("/wura-id");
+        } else if (role === "sender") {
+          router.replace("/sender-home");
+        } else {
+          router.replace("/accueil");
+        }
+      } else if (user && !profile && !loading && (firstSegment === "connexion-sender" || firstSegment === "choix")) {
+        // Utilisateur authentifié via Firebase, mais sans profil NestJS (nouveau compte ou profil manquant)
+        if (firstSegment === "connexion-sender") {
+          router.replace("/inscription-sender");
+        }
+      } else if (user && profile && profile.role?.toLowerCase() === "receiver" && !(profile.wuraId || profile?.receiver?.wuraId) && !isWuraIdPage && !inAuthGroup) {
+        // Receiver connecté mais sans wuraId, et pas sur la page wura-id → forcer
         router.replace("/wura-id");
-      } else if (role === "sender") {
-        router.replace("/sender-home");
-      } else {
-        router.replace("/accueil");
       }
-    } else if (user && !profile && !loading && (firstSegment === "connexion-sender" || firstSegment === "choix")) {
-      // Utilisateur authentifié via Firebase, mais sans profil NestJS (nouveau compte ou profil manquant)
-      if (firstSegment === "connexion-sender") {
-        router.replace("/inscription-sender");
-      }
-    } else if (user && profile && profile.role?.toLowerCase() === "receiver" && !(profile.wuraId || profile?.receiver?.wuraId) && !isWuraIdPage && !inAuthGroup) {
-      // Receiver connecté mais sans wuraId, et pas sur la page wura-id → forcer
-      router.replace("/wura-id");
-    }
+    };
+
+    runRouting();
   }, [user, profile, loading, segments, router]);
 
   if (loading) {
