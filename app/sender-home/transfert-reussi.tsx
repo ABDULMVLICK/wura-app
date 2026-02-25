@@ -139,9 +139,11 @@ export default function TransfertReussiScreen() {
                             <Text className="text-[24px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight text-center mb-4">
                                 {status === "INITIATED" || status === "PAYIN_PENDING" ? "Attente du paiement mobile..."
                                     : status === "PAYIN_SUCCESS" || status === "BRIDGE_PROCESSING" ? `Transfert vers ${destinationCountry} en cours...`
-                                        : status === "BRIDGE_SUCCESS" || status === "WAITING_USER_OFFRAMP" || status === "OFFRAMP_PROCESSING" ? "Conversion en cours..."
-                                            : status === "COMPLETED" ? "Transfert réussi !"
-                                                : "Échec du transfert."
+                                        : status === "BRIDGE_SUCCESS" || status === "WAITING_USER_OFFRAMP" ? "Transfert en transit"
+                                            : status === "OFFRAMP_PROCESSING" ? "Conversion en cours..."
+                                                : status === "COMPLETED" ? "Transfert réussi !"
+                                                    : status === "REFUNDED" ? "Transaction remboursée"
+                                                        : "Échec du transfert."
                                 }
                             </Text>
 
@@ -154,6 +156,15 @@ export default function TransfertReussiScreen() {
                                     à <Text className="font-bold text-gray-900 dark:text-white">{recipientHandle}</Text>
                                 </Text>
                             </View>
+
+                            {/* Transit info message */}
+                            {(status === "BRIDGE_SUCCESS" || status === "WAITING_USER_OFFRAMP") && (
+                                <View className="w-full mt-3 bg-blue-50 dark:bg-blue-900/15 rounded-xl p-4 border border-blue-200 dark:border-blue-800/30">
+                                    <Text className="text-blue-700 dark:text-blue-300 text-sm font-medium text-center leading-5">
+                                        Le bénéficiaire doit déclencher son retrait sur son application Wura 📲
+                                    </Text>
+                                </View>
+                            )}
 
                             {/* Failure Action Buttons */}
                             {(status === "PAYIN_FAILED" || status === "BRIDGE_FAILED" || status === "OFFRAMP_FAILED") && (
