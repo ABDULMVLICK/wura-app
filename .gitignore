@@ -44,3 +44,6 @@ app-example
 /android
 backend-integration-test.js
 wura-native.apk
+*.swp
+._*
+.DS_Store
