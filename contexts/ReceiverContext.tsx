@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import api from '../lib/api';
 import { TransferService } from '../services/transfers';
 import { TransactionInfo } from '../types/transaction';
 import { useAuth } from './AuthContext';
+import { useWeb3Auth } from './Web3AuthContext';
 
 export interface ReceiverState {
     balanceEUR: number;
@@ -26,7 +28,17 @@ const ReceiverContext = createContext<ReceiverContextType | undefined>(undefined
 
 export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, setState] = useState<ReceiverState>(defaultState);
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
+    const { address } = useWeb3Auth();
+
+    // Sync wallet address to backend on login (triggers escrow auto-release)
+    useEffect(() => {
+        if (user && address && profile?.role === 'RECEIVER') {
+            api.patch('/users/me/wallet', { walletAddress: address })
+                .then(() => console.log('[Receiver] Wallet synced to backend:', address.substring(0, 10) + '...'))
+                .catch(() => { }); // Silently fail if already set
+        }
+    }, [user, address, profile]);
 
     const refreshBalance = async () => {
         // Only fetch if a user is authenticated
