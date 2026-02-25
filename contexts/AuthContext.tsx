@@ -2,6 +2,7 @@ import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { signOut as firebaseSignOut, onAuthStateChanged } from "@react-native-firebase/auth";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { auth } from "../lib/firebase";
+import { registerForPushNotifications } from "../lib/notifications";
 import { AuthService } from "../services/auth";
 
 type User = FirebaseAuthTypes.User;
@@ -58,6 +59,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(firebaseUser);
             if (firebaseUser) {
                 await fetchProfile(firebaseUser.uid);
+                // Enregistrer le push token pour les notifications
+                try {
+                    await registerForPushNotifications();
+                } catch (e) {
+                    console.warn("[Auth] Push registration skipped:", e);
+                }
             } else {
                 setProfile(null);
             }

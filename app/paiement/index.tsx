@@ -85,15 +85,32 @@ export default function PaiementScreen() {
     const pendingTxRef = useRef<string | null>(null);
     const paymentSuccessRef = useRef(false);
     const [shouldNavigateId, setShouldNavigateId] = useState<string | null>(null);
+    const isMountedRef = useRef(false);
+
+    // Marquer le composant comme monté après le premier render
+    useEffect(() => {
+        const timer = setTimeout(() => { isMountedRef.current = true; }, 500);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Effet séparé pour la navigation afin d'éviter les crashs Expo Router
     useEffect(() => {
-        if (shouldNavigateId) {
+        if (shouldNavigateId && isMountedRef.current) {
             const timer = setTimeout(() => {
-                router.replace({
-                    pathname: "/sender-home/transfert-reussi",
-                    params: { transactionId: shouldNavigateId }
-                });
+                try {
+                    router.replace({
+                        pathname: "/sender-home/transfert-reussi",
+                        params: { transactionId: shouldNavigateId }
+                    });
+                } catch (e) {
+                    console.warn("[Paiement] Navigation retardée, retry...", e);
+                    setTimeout(() => {
+                        router.replace({
+                            pathname: "/sender-home/transfert-reussi",
+                            params: { transactionId: shouldNavigateId }
+                        });
+                    }, 1000);
+                }
                 setShouldNavigateId(null);
             }, 800);
             return () => clearTimeout(timer);
