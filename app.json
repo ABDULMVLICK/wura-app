@@ -102,7 +102,8 @@
       "router": {},
       "eas": {
         "projectId": "517e5327-3235-4881-98b1-a397a35c84ce"
-      }
+      },
+      "mockUsdtBalance": 50
     }
   }
 }

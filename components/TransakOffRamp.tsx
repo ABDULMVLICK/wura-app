@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { AlertCircle, ArrowRight, CheckCircle, X } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -119,7 +120,7 @@ export function TransakOffRamp({ visible, onClose, balanceEUR, balanceUSDT }: Tr
     const sendUsdt = useCallback(
         async (transakDepositAddress: string, cryptoAmount: number) => {
             // Mock mode : bypass blockchain pour les tests (EXPO_PUBLIC_MOCK_USDT_BALANCE > 0)
-            const isMock = parseFloat(process.env.EXPO_PUBLIC_MOCK_USDT_BALANCE ?? '0') > 0;
+            const isMock = Number(Constants.expoConfig?.extra?.mockUsdtBalance ?? 0) > 0;
             if (isMock) {
                 console.log(`[TransakOffRamp] 🧪 Mock mode: simulation TX vers ${transakDepositAddress} (${cryptoAmount} USDT)`);
                 setTxStatus('sending');
@@ -130,7 +131,7 @@ export function TransakOffRamp({ visible, onClose, balanceEUR, balanceUSDT }: Tr
             }
 
             if (!provider) {
-                setErrorMsg('Wallet non connecté. Reconnectez-vous.');
+                setErrorMsg('Session expirée. Veuillez vous reconnecter.');
                 setTxStatus('error');
                 return;
             }
@@ -256,13 +257,13 @@ export function TransakOffRamp({ visible, onClose, balanceEUR, balanceUSDT }: Tr
                                 </TouchableOpacity>
                             </View>
                         ) : balanceEUR <= 0 ? (
-                            /* Solde trop faible (frais Transak > montant) */
+                            /* Solde trop faible (frais > montant) */
                             <View style={styles.stateCard}>
                                 <Text style={styles.emptyEmoji}>⚠️</Text>
                                 <Text style={styles.stateTitle}>Solde insuffisant</Text>
                                 <Text style={styles.stateText}>
-                                    Votre solde ({balanceUSDT.toFixed(2)} USDT) est inférieur au minimum requis par Transak.{'\n\n'}
-                                    Un minimum de ~30 USDT est nécessaire pour couvrir les frais de virement.
+                                    Votre solde est actuellement trop faible pour couvrir les frais de virement.{'\n\n'}
+                                    Attendez de recevoir un montant suffisant avant de procéder au retrait.
                                 </Text>
                                 <TouchableOpacity onPress={handleClose} style={styles.secondaryBtn}>
                                     <Text style={styles.secondaryBtnText}>Retour à l'accueil</Text>
