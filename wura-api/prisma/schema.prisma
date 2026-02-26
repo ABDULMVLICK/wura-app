@@ -1,0 +1,140 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SENDER
+  RECEIVER
+}
+
+enum TransactionStatus {
+  INITIATED
+  PAYIN_PENDING
+  PAYIN_SUCCESS
+  BRIDGE_PROCESSING
+  BRIDGE_SUCCESS
+  WAITING_USER_OFFRAMP
+  OFFRAMP_PROCESSING
+  COMPLETED
+  PAYIN_FAILED
+  BRIDGE_FAILED
+  OFFRAMP_FAILED
+  REFUNDED
+}
+
+model User {
+  id          String   @id @default(uuid())
+  firebaseUid String   @unique @map("firebase_uid")
+  role        Role
+  phone       String?  @unique
+  email       String?  @unique
+  pushToken   String?  @map("push_token") // Token Expo push notification
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  sender   Sender?
+  receiver Receiver?
+
+  @@map("users")
+}
+
+model Sender {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  firstName String   @map("first_name")
+  lastName  String   @map("last_name")
+  country   String
+  kycLevel  Int      @default(0) @map("kyc_level")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id])
+  transactions Transaction[] @relation("SenderTransactions")
+
+  @@map("senders")
+}
+
+model Receiver {
+  id                    String   @id @default(uuid())
+  userId                String   @unique @map("user_id")
+  wuraId                String   @unique @map("wura_id") // Unique ID pour le routage
+  ibanEncrypted         String?  @map("iban_encrypted")
+  bic                   String?
+  web3AuthWalletAddress String?  @map("web3auth_wallet_address") // Adresse Polygon
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  user         User            @relation(fields: [userId], references: [id])
+  transactions Transaction[]   @relation("ReceiverTransactions")
+  volumes      ReceiverVolume?
+
+  @@map("receivers")
+}
+
+// Agrège les volumes annuels (pour la règle des 500€ gratuits de Mt Pelerin)
+model ReceiverVolume {
+  id             String  @id @default(uuid())
+  receiverId     String  @unique @map("receiver_id")
+  year           Int
+  totalVolumeEur Decimal @default(0.0) @map("total_volume_eur") @db.Decimal(10, 2)
+
+  receiver Receiver @relation(fields: [receiverId], references: [id])
+
+  @@unique([receiverId, year])
+  @@map("receiver_volumes")
+}
+
+// Oracle interne des taux
+model ExchangeRate {
+  pair          String   @id // ex: "XOF_USDT", "USDT_EUR"
+  baseRate      Decimal  @map("base_rate") @db.Decimal(18, 6)
+  markupPercent Decimal  @default(0.0) @map("markup_percent") @db.Decimal(18, 6) // Marge Wura
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("exchange_rates")
+}
+
+model Transaction {
+  id              String            @id @default(uuid())
+  referenceId     String            @unique @map("reference_id")
+  senderId        String            @map("sender_id")
+  receiverId      String            @map("receiver_id")
+  status          TransactionStatus @default(INITIATED)
+  routingStrategy String            @map("routing_strategy") // "TRANSAK" ou "MT_PELERIN"
+  deliverySpeed   String            @default("STANDARD") @map("delivery_speed") // "INSTANT" ou "STANDARD"
+
+  // Montants
+  amountFiatIn          Decimal @map("amount_fiat_in") @db.Decimal(10, 2) // ex: 65000 (XOF)
+  amountUsdtBridged     Decimal @map("amount_usdt_bridged") @db.Decimal(18, 6) // ex: 100.00 (USDT)
+  amountFiatOutExpected Decimal @map("amount_fiat_out_expected") @db.Decimal(10, 2) // ex: 98.50 (EUR)
+
+  // Comptabilité & Marges (Taux réels et frais)
+  clientExchangeRate Decimal @default(0) @map("client_exchange_rate") @db.Decimal(18, 6) // Taux vendu au client
+  actualUsdtCostRate Decimal @default(0) @map("actual_usdt_cost_rate") @db.Decimal(18, 6) // Coût d'achat réel USDT (Binance)
+  kkiapayFeeCfa      Decimal @default(0.0) @map("kkiapay_fee_cfa") @db.Decimal(10, 2) // Frais pris par Kkiapay
+  polygonGasFeeMatic Decimal @default(0.0) @map("polygon_gas_fee_matic") @db.Decimal(18, 6) // Frais réseau Polygon payés
+  wuraFee            Decimal @default(0.0) @map("wura_fee") @db.Decimal(10, 2) // Frais facturés en plus par Wura
+  absorptionFeeUsdt  Decimal @default(0.0) @map("absorption_fee_usdt") @db.Decimal(18, 6) // Subvention off-ramp
+
+  // Preuves techniques
+  kkiapayId      String? @map("kkiapay_id")
+  polygonTxHash  String? @map("polygon_tx_hash")
+  offrampQuoteId String? @map("offramp_quote_id")
+
+  failureReason String?  @map("failure_reason")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  sender   Sender   @relation("SenderTransactions", fields: [senderId], references: [id])
+  receiver Receiver @relation("ReceiverTransactions", fields: [receiverId], references: [id])
+
+  @@map("transactions")
+}
