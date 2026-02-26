@@ -102,14 +102,17 @@ export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 balanceUSDT = await readOnChainUSDT(address);
             }
 
-            if (balanceUSDT > 0) {
+            // Minimum Transak SEPA ~30 USDT (en dessous, les frais fixes dépassent le montant)
+            const TRANSAK_MIN_USDT = 30;
+            if (balanceUSDT >= TRANSAK_MIN_USDT) {
                 try {
                     // Combien d'EUR Transak versera réellement pour ce montant USDT
                     const { data } = await api.get<{ fiatAmount: number }>(
                         '/quotes/sell',
                         { params: { cryptoAmount: balanceUSDT.toFixed(6) } }
                     );
-                    balanceEUR = data.fiatAmount;
+                    // Clamp à 0 : un fiatAmount négatif (frais > montant) = solde non retirable
+                    balanceEUR = Math.max(0, data.fiatAmount);
                 } catch {
                     // Fallback : ~3% frais Transak estimés
                     balanceEUR = parseFloat((balanceUSDT * 0.97).toFixed(2));

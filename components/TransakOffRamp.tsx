@@ -243,13 +243,26 @@ export function TransakOffRamp({ visible, onClose, balanceEUR, balanceUSDT }: Tr
                 {step === 'confirm' && (
                     <View style={styles.confirmScreen}>
                         {balanceUSDT <= 0 ? (
-                            /* Solde vide */
+                            /* Aucun fonds */
                             <View style={styles.stateCard}>
                                 <Text style={styles.emptyEmoji}>💰</Text>
                                 <Text style={styles.stateTitle}>Aucun fonds disponible</Text>
                                 <Text style={styles.stateText}>
                                     Vous n'avez pas encore de fonds à retirer.{'\n'}
                                     Attendez qu'un envoi soit effectué en votre nom.
+                                </Text>
+                                <TouchableOpacity onPress={handleClose} style={styles.secondaryBtn}>
+                                    <Text style={styles.secondaryBtnText}>Retour à l'accueil</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : balanceEUR <= 0 ? (
+                            /* Solde trop faible (frais Transak > montant) */
+                            <View style={styles.stateCard}>
+                                <Text style={styles.emptyEmoji}>⚠️</Text>
+                                <Text style={styles.stateTitle}>Solde insuffisant</Text>
+                                <Text style={styles.stateText}>
+                                    Votre solde ({balanceUSDT.toFixed(2)} USDT) est inférieur au minimum requis par Transak.{'\n\n'}
+                                    Un minimum de ~30 USDT est nécessaire pour couvrir les frais de virement.
                                 </Text>
                                 <TouchableOpacity onPress={handleClose} style={styles.secondaryBtn}>
                                     <Text style={styles.secondaryBtnText}>Retour à l'accueil</Text>
