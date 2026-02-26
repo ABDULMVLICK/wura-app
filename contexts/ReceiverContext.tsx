@@ -102,35 +102,20 @@ export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             const mockBalance = Number(Constants.expoConfig?.extra?.mockUsdtBalance ?? 0);
             if (mockBalance > 0) {
                 balanceUSDT = mockBalance;
-                // Appel API pour afficher le vrai montant EUR (même en mode test)
-                try {
-                    const { data } = await api.get<{ fiatAmount: number }>(
-                        '/quotes/sell',
-                        { params: { cryptoAmount: balanceUSDT.toFixed(6) } }
-                    );
-                    balanceEUR = Math.max(0, data.fiatAmount);
-                } catch {
-                    balanceEUR = parseFloat((balanceUSDT * 0.97).toFixed(2));
-                }
             } else if (address) {
                 balanceUSDT = await readOnChainUSDT(address);
+            }
 
-                // Minimum ~10 USDT (en dessous, les frais fixes dépassent le montant)
-                const TRANSAK_MIN_USDT = 10;
-                if (balanceUSDT >= TRANSAK_MIN_USDT) {
-                    try {
-                        // Combien d'EUR versera réellement le service pour ce montant
-                        const { data } = await api.get<{ fiatAmount: number }>(
-                            '/quotes/sell',
-                            { params: { cryptoAmount: balanceUSDT.toFixed(6) } }
-                        );
-                        // Clamp à 0 : un fiatAmount négatif (frais > montant) = solde non retirable
-                        balanceEUR = Math.max(0, data.fiatAmount);
-                    } catch {
-                        // Fallback : ~3% frais estimés
-                        balanceEUR = parseFloat((balanceUSDT * 0.97).toFixed(2));
-                    }
-                }
+            // Devis EUR via l'API (sepa_bank_transfer_instant — même méthode que le widget)
+            // Minimum ~10 USDT : en dessous, les frais fixes Transak dépassent le montant
+            const TRANSAK_MIN_USDT = 10;
+            if (balanceUSDT >= TRANSAK_MIN_USDT) {
+                const { data } = await api.get<{ fiatAmount: number }>(
+                    '/quotes/sell',
+                    { params: { cryptoAmount: balanceUSDT.toFixed(6) } }
+                );
+                // Clamp à 0 : fiatAmount négatif = frais > montant = non retirable
+                balanceEUR = Math.max(0, data.fiatAmount);
             }
         } catch (error) {
             console.warn("Receiver balance refresh failed");
