@@ -1,20 +1,10 @@
-import { clsx } from "clsx";
 import { useRouter } from "expo-router";
-import { ChevronLeft, ChevronRight, ChevronRight as ChevronRightIcon, Plus, QrCode, Search } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTransfer } from "../../contexts/TransferContext";
 import { AuthService } from "../../services/auth";
-
-// Mock Data for Recipients
-const RECIPIENTS = [
-    { id: '1', name: 'Amina Diallo', handle: '@AminaD', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBsbFt5zt82v5VdC2lYIDevBIro_E3MV6wwqvEM0CXOf1SProI9diWOyaVqSJe0fHlZj4P2xw18BMO8Il6C6GbnLaSovSIkvcFfMCVWU6XCD293b1csCG7HpADcP8VNLW4VEfOuhoPEU17jGpZEroClAuw-cwDrmvDCeuVpFPkWHtX_5_4e_OlhW2Lg2awPkD-ILtweEsNgsdV9pBzLhNYfrkVUtJXRReK9F6Eehsb-039h93-_BDexnonG7wHqVr2cscJkyb3gXr0' },
-    { id: '2', name: 'Jean Dupont', handle: '@JeanDu93', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA9PblZlf10SpU4YF5W7EPgJBtTCiZPD49eqJy_5mmd02yiTipip2DTb44waDnDy-WGfXuQFdNV7LhWN7sdHlFA4HBdCMTo38M6QGRUBLPbgY12YWn9Vczg-3lilMDAnukzR67ww5tUysckXQ7fkJymxyhWFgynVOL9wDeNO5oQl6cNqgj5rJr_OL58vKhqLJ2IsN8PX8otheLdC2IRFQ2bhiCv4PYcluWRnjw83zGHfe0AaHOcOm0uI_bOvovReNawvBGANnlTIzg' },
-    { id: '3', name: 'Kwesi Mensah', handle: '@KwesiM', initial: 'KM', color: 'bg-indigo-100', text: 'text-indigo-600', border: 'border-indigo-100' },
-    { id: '4', name: 'Marie Claire', handle: '@MarieC', image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDNS1CcM5dRsW6nyezA7Ktl_k-TBbdLLbTwGZentEJLAY1t-118nJtFogYM2WU1hIJ03Kwr7PWl58h29GlitKYRGyaHO2spW-BidwJw-v7MAXIhDl72VdusR7_zLMm-BiTkSlP10JhlLD4iU1LuwNyayQHmTueCOomKiI6wC9M7YIvYClBEgebVrS1Gi7cf7fGJ3Q_MYBXuvph_dhUdnBwvqXhXr29IQI9deiJDvQjdmjKH2rB76fcPIAY7X-AcgsDMGpf8BxW9qg0' },
-    { id: '5', name: 'Lamine Ba', handle: '@Lamine221', initial: 'LB', color: 'bg-rose-100', text: 'text-rose-600', border: 'border-rose-100' },
-];
 
 export default function RecipientSearchScreen() {
     const router = useRouter();
@@ -47,34 +37,16 @@ export default function RecipientSearchScreen() {
     }, [searchQuery]);
 
     const handleSelectRecipient = (recipient: any) => {
-        // Handle mock data format vs real API data format
-        const isApiResult = 'email' in recipient;
-
-        let nom = "";
-        let prenom = "";
-
-        if (isApiResult) {
-            // For API result, we don't have the explicit name so we just pretend via the email.
-            prenom = recipient.email ? recipient.email.split('@')[0] : "Wura";
-            nom = "Utilisateur";
-        } else {
-            const names = recipient.name.split(' ');
-            nom = names.pop() || "";
-            prenom = names.join(' ');
-        }
-
-        // Save selected recipient into global state
         setRecipient({
             id: recipient.id,
-            wuraId: isApiResult ? recipient.wuraId : recipient.handle.replace('@', ''),
-            nom: nom,
-            prenom: prenom,
-            iban: "FR76 **** **** **** 8821", // Mocked for existing contacts
-            bic: "BNPA FR PP",
-            banque: "BNP Paribas",
-            pays: "France"
+            wuraId: recipient.wuraId,
+            nom: '',
+            prenom: recipient.email ? recipient.email.split('@')[0] : 'Utilisateur',
+            iban: '',
+            bic: '',
+            banque: '',
+            pays: '',
         });
-        // Proceed to Beneficiary Confirmation
         router.push("/sender-home/confirmation-beneficiary");
     };
 
@@ -91,9 +63,7 @@ export default function RecipientSearchScreen() {
                 <Text className="text-lg font-semibold tracking-wide text-gray-900 dark:text-gray-100">
                     Envoyer de l'argent
                 </Text>
-                <TouchableOpacity className="p-2 -mr-2 rounded-full active:bg-gray-200 dark:active:bg-white/10">
-                    <QrCode size={24} className="text-gray-800 dark:text-gray-100" color="#1f2937" />
-                </TouchableOpacity>
+                <View style={{ width: 40 }} />
             </View>
 
             <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
@@ -152,7 +122,7 @@ export default function RecipientSearchScreen() {
                         {searchQuery.length >= 3 ? "Résultats de la recherche" : "Suggérés"}
                     </Text>
                     {!searchQuery && (
-                        <TouchableOpacity>
+                        <TouchableOpacity onPress={() => router.push("/historique")}>
                             <Text className="text-sm font-medium text-yellow-600 dark:text-[#f9f506]">Voir tout</Text>
                         </TouchableOpacity>
                     )}
@@ -160,45 +130,43 @@ export default function RecipientSearchScreen() {
 
                 {/* List of Recipients */}
                 <View className="space-y-3 gap-3">
-                    {searchQuery.length >= 3 && searchResults.length === 0 && !isSearching ? (
+                    {searchQuery.length < 3 && (
+                        <View className="py-8 items-center">
+                            <Text className="text-gray-400 dark:text-gray-500 text-center text-sm">
+                                Tapez au moins 3 caractères{'\n'}pour rechercher un bénéficiaire
+                            </Text>
+                        </View>
+                    )}
+
+                    {searchQuery.length >= 3 && searchResults.length === 0 && !isSearching && (
                         <View className="py-6 items-center">
                             <Text className="text-gray-500 text-center">Aucun utilisateur trouvé pour @{searchQuery.trim()}</Text>
                         </View>
-                    ) : null}
+                    )}
 
-                    {(searchQuery.length >= 3 ? searchResults : RECIPIENTS).map((recipient: any) => (
+                    {searchQuery.length >= 3 && searchResults.map((recipient: any) => (
                         <TouchableOpacity
                             key={recipient.id}
                             onPress={() => handleSelectRecipient(recipient)}
                             className="bg-white dark:bg-[#2d2c1b] rounded-xl p-4 flex-row items-center shadow-sm border border-transparent active:border-[#f9f506]/30"
                         >
-                            <View className="relative">
-                                {recipient.image ? (
-                                    <Image
-                                        source={{ uri: recipient.image }}
-                                        className="h-12 w-12 rounded-full border-2 border-white dark:border-gray-800"
-                                        resizeMode="cover"
-                                    />
-                                ) : (
-                                    <View className={clsx("h-12 w-12 rounded-full items-center justify-center border-2 border-white dark:border-gray-800", recipient.color || "bg-yellow-100")}>
-                                        <Text className={clsx("font-bold text-lg", recipient.text || "text-yellow-600")}>
-                                            {recipient.initial || (recipient.wuraId ? recipient.wuraId.substring(0, 2).toUpperCase() : "WU")}
-                                        </Text>
-                                    </View>
-                                )}
+                            <View className="h-12 w-12 rounded-full items-center justify-center border-2 border-white dark:border-gray-800 bg-yellow-100 dark:bg-yellow-900/30">
+                                <Text className="font-bold text-lg text-yellow-600 dark:text-yellow-400">
+                                    {recipient.wuraId ? recipient.wuraId.substring(0, 2).toUpperCase() : "WU"}
+                                </Text>
                             </View>
 
                             <View className="ml-4 flex-1">
                                 <Text className="font-bold text-gray-900 dark:text-white">
-                                    {recipient.name || (recipient.email ? recipient.email.split('@')[0] : "Utilisateur Wura")}
+                                    {recipient.email ? recipient.email.split('@')[0] : "Utilisateur Wura"}
                                 </Text>
                                 <Text className="text-sm text-gray-500 dark:text-gray-400">
-                                    @{recipient.handle ? recipient.handle.replace('@', '') : recipient.wuraId}
+                                    @{recipient.wuraId}
                                 </Text>
                             </View>
 
                             <View className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 dark:bg-white/5">
-                                <ChevronRightIcon size={16} className="text-gray-400" color="#9ca3af" />
+                                <ChevronRight size={16} className="text-gray-400" color="#9ca3af" />
                             </View>
                         </TouchableOpacity>
                     ))}

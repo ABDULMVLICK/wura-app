@@ -12,10 +12,30 @@ import { CountrySelector, WESTERN_COUNTRIES } from "../../components/CountrySele
 import { useTransfer } from "../../contexts/TransferContext";
 import { TransferService } from "../../services/transfers";
 
+// Validation checksum IBAN (Mod 97)
+function isValidIban(raw: string): boolean {
+    const iban = raw.replace(/\s+/g, '').toUpperCase();
+    if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
+    const rearranged = iban.slice(4) + iban.slice(0, 4);
+    const numeric = rearranged.split('').map(c => {
+        const code = c.charCodeAt(0);
+        return code >= 65 ? (code - 55).toString() : c;
+    }).join('');
+    let remainder = 0;
+    for (const char of numeric) {
+        remainder = (remainder * 10 + parseInt(char)) % 97;
+    }
+    return remainder === 1;
+}
+
 const beneficiarySchema = z.object({
     nom: z.string().min(2, "Le nom est trop court"),
     prenom: z.string().min(2, "Le prénom est trop court"),
-    iban: z.string().min(14, "L'IBAN semble invalide").max(34, "L'IBAN semble invalide"),
+    iban: z.string()
+        .min(15, "L'IBAN est trop court")
+        .max(34, "L'IBAN est trop long")
+        .refine(v => /^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(v.replace(/\s+/g, '').toUpperCase()), "Format IBAN invalide (ex: FR76 3000 4000…)")
+        .refine(v => isValidIban(v), "IBAN invalide — vérifiez les chiffres de contrôle"),
     bic: z.string().min(8, "Le BIC doit contenir 8 ou 11 caractères").max(11, "Le BIC doit contenir 8 ou 11 caractères"),
     banque: z.string().min(2, "Le nom de la banque est requis"),
 });

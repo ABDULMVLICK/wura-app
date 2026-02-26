@@ -161,7 +161,7 @@ export default function TransfertReussiScreen() {
                             {(status === "BRIDGE_SUCCESS" || status === "WAITING_USER_OFFRAMP") && (
                                 <View className="w-full mt-3 bg-blue-50 dark:bg-blue-900/15 rounded-xl p-4 border border-blue-200 dark:border-blue-800/30">
                                     <Text className="text-blue-700 dark:text-blue-300 text-sm font-medium text-center leading-5">
-                                        Le bénéficiaire doit déclencher son retrait sur son application Wura 📲
+                                        Les fonds sont arrivés. Le bénéficiaire les retirera vers son compte bancaire depuis son application Wura.
                                     </Text>
                                 </View>
                             )}
@@ -208,7 +208,10 @@ export default function TransfertReussiScreen() {
                                     <Text className="text-sm font-medium text-gray-500 dark:text-gray-400">Référence</Text>
                                     <View className="flex-row items-center gap-2 bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded-md">
                                         <Text className="text-sm font-bold text-gray-800 dark:text-gray-200 font-mono tracking-wide">{reference}</Text>
-                                        <TouchableOpacity>
+                                        <TouchableOpacity onPress={async () => {
+                                            await Clipboard.setStringAsync(reference);
+                                            Alert.alert("Copié !", "Référence copiée dans le presse-papiers.");
+                                        }}>
                                             <Copy size={14} className="text-gray-400" color="#9ca3af" />
                                         </TouchableOpacity>
                                     </View>
@@ -219,7 +222,11 @@ export default function TransfertReussiScreen() {
                                 {/* Date */}
                                 <View className="flex-row justify-between items-center">
                                     <Text className="text-sm font-medium text-gray-500 dark:text-gray-400">Date</Text>
-                                    <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">24 Oct 2023, 14:30</Text>
+                                    <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                        {txData?.createdAt
+                                            ? new Date(txData.createdAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                            : new Date().toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    </Text>
                                 </View>
 
                                 <View className="border-b border-dashed border-gray-200 dark:border-gray-700 h-[1px]" />
@@ -267,7 +274,19 @@ export default function TransfertReussiScreen() {
                         )}
 
                         {/* Download Receipt */}
-                        <TouchableOpacity className="mt-6 flex-row items-center justify-center gap-2 px-4 py-2 rounded-lg active:bg-[#F59E0B]/5">
+                        <TouchableOpacity
+                            onPress={async () => {
+                                try {
+                                    await Share.share({
+                                        message: `Reçu Wura\nRéférence : ${reference}\nMontant : ${formattedAmount} FCFA\nBénéficiaire : ${recipientHandle}\nDate : ${txData?.createdAt ? new Date(txData.createdAt).toLocaleString('fr-FR') : new Date().toLocaleString('fr-FR')}`,
+                                        title: `Reçu Wura — ${reference}`,
+                                    });
+                                } catch (error: any) {
+                                    console.error("Erreur partage reçu:", error.message);
+                                }
+                            }}
+                            className="mt-6 flex-row items-center justify-center gap-2 px-4 py-2 rounded-lg active:bg-[#F59E0B]/5"
+                        >
                             <Download size={20} className="text-[#F59E0B]" color="#F59E0B" />
                             <Text className="text-[#F59E0B] font-semibold text-sm">Télécharger le reçu (PDF)</Text>
                         </TouchableOpacity>

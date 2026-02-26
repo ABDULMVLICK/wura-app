@@ -4,7 +4,6 @@ import { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomTabBar } from "../../components/BottomTabBar";
-import { MtPelerinOffRamp } from "../../components/MtPelerinOffRamp";
 import { TransakOffRamp } from "../../components/TransakOffRamp";
 import { useAuth } from "../../contexts/AuthContext";
 import { useReceiver } from "../../contexts/ReceiverContext";
@@ -19,34 +18,20 @@ export default function HomeScreen() {
 
     const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
     const [transakVisible, setTransakVisible] = useState(false);
-    const [mtPelerinVisible, setMtPelerinVisible] = useState(false);
 
     const balance = state.balanceEUR;
-    const balanceUSDT = state.balanceUSDT;
 
     // Transactions en attente de retrait
     const pendingTxs = state.recentTransactions.filter(
         tx => !WITHDRAWN_STATUSES.has(tx.status) && !state.withdrawnTxIds.includes(tx.id)
     );
 
-    // Répartition USDT proportionnelle par transaction
-    const totalPendingEUR = pendingTxs.reduce((sum, tx) => sum + tx.amountEUR, 0);
-    const usdtForTx = (txId: string): number => {
-        const tx = pendingTxs.find(t => t.id === txId);
-        if (!tx || totalPendingEUR <= 0 || balanceUSDT <= 0) return 0;
-        return (tx.amountEUR / totalPendingEUR) * balanceUSDT;
-    };
-
-    // Ouvrir le widget correspondant au routingStrategy de la transaction
+    // Ouvrir le widget Transak avec la bonne méthode selon routingStrategy
     const openWithdrawal = (txId: string) => {
         const tx = pendingTxs.find(t => t.id === txId);
         if (!tx) return;
         setSelectedTxId(txId);
-        if (tx.routingStrategy === 'MT_PELERIN') {
-            setMtPelerinVisible(true);
-        } else {
-            setTransakVisible(true);
-        }
+        setTransakVisible(true);
     };
 
     const handleWithdrawalSuccess = () => {
@@ -54,9 +39,10 @@ export default function HomeScreen() {
         setSelectedTxId(null);
     };
 
-    const selectedTx = pendingTxs.find(tx => tx.id === selectedTxId);
-    const withdrawalUsdt = selectedTx ? usdtForTx(selectedTx.id) : 0;
-    const withdrawalEur  = selectedTx ? selectedTx.amountEUR : 0;
+    // Solde réel du wallet (source de vérité) — amountUsdtBridged par transaction
+    // peut être une valeur de test irréaliste. En production les deux convergent de toute façon.
+    const withdrawalUsdt = state.balanceUSDT;
+    const withdrawalEur  = state.balanceEUR;
 
     return (
         <SafeAreaView className="flex-1 bg-background">
@@ -167,22 +153,14 @@ export default function HomeScreen() {
                 <BottomTabBar />
             </View>
 
-            {/* Widget Transak — SEPA Instant */}
+            {/* Widget Transak — méthode de paiement auto-sélectionnée par Transak en staging */}
             <TransakOffRamp
                 visible={transakVisible}
                 onClose={() => setTransakVisible(false)}
                 onSuccess={handleWithdrawalSuccess}
                 balanceEUR={withdrawalEur}
                 balanceUSDT={withdrawalUsdt}
-            />
-
-            {/* Widget Mt Pelerin — SEPA Standard 1-3 jours */}
-            <MtPelerinOffRamp
-                visible={mtPelerinVisible}
-                onClose={() => setMtPelerinVisible(false)}
-                onSuccess={handleWithdrawalSuccess}
-                balanceEUR={withdrawalEur}
-                balanceUSDT={withdrawalUsdt}
+                txId={selectedTxId ?? undefined}
             />
         </SafeAreaView>
     );

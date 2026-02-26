@@ -84,5 +84,14 @@ export const TransferService = {
     requestRefund: async (transactionId: string) => {
         const response = await api.post(`/transactions/${transactionId}/refund`);
         return response.data;
-    }
+    },
+
+    /**
+     * Notifier le backend que le retrait off-ramp a démarré (USDT envoyé à Transak/Mt Pelerin)
+     * Passe la transaction en OFFRAMP_PROCESSING et sauvegarde le hash Polygon
+     */
+    reportOfframp: async (txId: string, polygonTxHash: string) => {
+        const response = await api.patch(`/transactions/${txId}/offramp`, { polygonTxHash });
+        return response.data;
+    },
 };

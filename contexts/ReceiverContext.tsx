@@ -90,6 +90,7 @@ export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             formattedHistory = history.map((tx: any) => ({
                 id: tx.referenceId || tx.id,
                 amountEUR: Number(tx.amountFiatOutExpected || tx.amountEUR || 0),
+                amountUSDT: Number(tx.amountUsdtBridged || tx.amountUSDT || 0),
                 senderName: tx.sender?.prenom ? `${tx.sender.prenom} ${tx.sender.nom}` : "Utilisateur Wura",
                 date: new Date(tx.createdAt || tx.date || Date.now()),
                 status: tx.status,

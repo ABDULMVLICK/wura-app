@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useWeb3Auth } from '../contexts/Web3AuthContext';
+import { TransferService } from '../services/transfers';
 
 // ---------------------------------------------------------------------------
 // Constants (internes — jamais affichées à l'utilisateur)
@@ -39,7 +40,11 @@ const ERC20_ABI = [
 // Helpers
 // ---------------------------------------------------------------------------
 
-function buildTransakUrl(walletAddress: string | null, usdtAmount: number): string {
+function buildTransakUrl(
+    walletAddress: string | null,
+    usdtAmount: number,
+    paymentMethod?: 'sepa_bank_transfer_instant' | 'sepa_bank_transfer',
+): string {
     const params = new URLSearchParams({
         apiKey: TRANSAK_API_KEY,
         environment: 'STAGING',
@@ -47,11 +52,11 @@ function buildTransakUrl(walletAddress: string | null, usdtAmount: number): stri
         cryptoCurrencyCode: 'USDT',
         network: 'polygon',
         fiatCurrency: 'EUR',
-        paymentMethod: 'sepa_bank_transfer_instant', // SEPA Instant — règlement en quelques secondes
         disableWalletAddressForm: 'true',
         isFeeCalculationHidden: 'true',
         defaultCryptoAmount: usdtAmount.toFixed(6),
         ...(walletAddress ? { walletAddress } : {}),
+        ...(paymentMethod ? { paymentMethod } : {}),
     });
     return `${TRANSAK_BASE_URL}?${params.toString()}`;
 }
@@ -72,6 +77,10 @@ export interface TransakOffRampProps {
     balanceEUR: number;
     /** Solde USDT réel sur Polygon — source de vérité pour defaultCryptoAmount */
     balanceUSDT: number;
+    /** Méthode de paiement Transak : instant (défaut) ou SEPA standard 1-3j (fallback MT Pelerin) */
+    paymentMethod?: 'sepa_bank_transfer_instant' | 'sepa_bank_transfer';
+    /** ID de la transaction à passer en OFFRAMP_PROCESSING après envoi USDT */
+    txId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -137,7 +146,7 @@ const INJECTED_JS = `
 // Component
 // ---------------------------------------------------------------------------
 
-export function TransakOffRamp({ visible, onClose, onSuccess, balanceEUR, balanceUSDT }: TransakOffRampProps) {
+export function TransakOffRamp({ visible, onClose, onSuccess, balanceEUR, balanceUSDT, paymentMethod = 'sepa_bank_transfer_instant', txId }: TransakOffRampProps) {
     const { provider, address } = useWeb3Auth();
     const webViewRef = useRef<WebView>(null);
 
@@ -177,8 +186,14 @@ export function TransakOffRamp({ visible, onClose, onSuccess, balanceEUR, balanc
                 console.log(`[TransakOffRamp] 🧪 Mock mode: simulation TX vers ${transakDepositAddress} (${cryptoAmount} USDT)`);
                 setTxStatus('sending');
                 await new Promise(r => setTimeout(r, 1500)); // simule latence réseau
-                setTxHash('0xMOCK_TEST_' + Date.now().toString(16));
+                const mockHash = '0xMOCK_TEST_' + Date.now().toString(16);
+                setTxHash(mockHash);
                 setTxStatus('success');
+                if (txId) {
+                    TransferService.reportOfframp(txId, mockHash).catch(e =>
+                        console.warn('[TransakOffRamp] reportOfframp (mock) failed:', e?.message)
+                    );
+                }
                 return;
             }
 
@@ -220,13 +235,18 @@ export function TransakOffRamp({ visible, onClose, onSuccess, balanceEUR, balanc
 
                 setTxHash(tx.hash);
                 setTxStatus('success');
+                if (txId) {
+                    TransferService.reportOfframp(txId, tx.hash).catch(e =>
+                        console.warn('[TransakOffRamp] reportOfframp failed:', e?.message)
+                    );
+                }
             } catch (err: any) {
                 console.error('[TransakOffRamp] Erreur TX:', err);
                 setErrorMsg(err?.reason ?? err?.message ?? 'Erreur lors du virement.');
                 setTxStatus('error');
             }
         },
-        [provider],
+        [provider, txId],
     );
 
     // -----------------------------------------------------------------------
@@ -277,7 +297,7 @@ export function TransakOffRamp({ visible, onClose, onSuccess, balanceEUR, balanc
         onClose();
     };
 
-    const transakUrl = buildTransakUrl(address, usdtAmount);
+    const transakUrl = buildTransakUrl(address, usdtAmount, paymentMethod);
 
     // -----------------------------------------------------------------------
     // Render
@@ -287,7 +307,11 @@ export function TransakOffRamp({ visible, onClose, onSuccess, balanceEUR, balanc
             <SafeAreaView style={styles.container}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Retrait vers ma banque</Text>
+                    <Text style={styles.headerTitle}>
+                        {paymentMethod === 'sepa_bank_transfer'
+                            ? 'Retrait SEPA Standard (1-3j)'
+                            : 'Retrait SEPA Instant'}
+                    </Text>
                     <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
                         <X size={18} color="#1a1a2e" />
                     </TouchableOpacity>
