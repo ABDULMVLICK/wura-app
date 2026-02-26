@@ -37,15 +37,8 @@ const ReceiverContext = createContext<ReceiverContextType | undefined>(undefined
 
 // ---------------------------------------------------------------------------
 // Lit le solde USDT on-chain du wallet via ethers.js + RPC Polygon
-// Si EXPO_PUBLIC_MOCK_USDT_BALANCE > 0, bypass la blockchain (test uniquement)
 // ---------------------------------------------------------------------------
 async function readOnChainUSDT(walletAddress: string): Promise<number> {
-    const mockBalance = parseFloat(process.env.EXPO_PUBLIC_MOCK_USDT_BALANCE ?? '0');
-    if (mockBalance > 0) {
-        console.log(`[ReceiverContext] 🧪 Mock mode: solde USDT simulé = ${mockBalance} USDT`);
-        return mockBalance;
-    }
-
     const { JsonRpcProvider, Contract, formatUnits } = require('ethers');
     for (const rpc of POLYGON_RPCS) {
         try {
@@ -101,21 +94,25 @@ export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             let balanceUSDT = 0;
             let balanceEUR = 0;
 
-            if (address) {
+            // Le mock ne nécessite pas d'adresse — vérifié avant le guard if (address)
+            const mockBalance = parseFloat(process.env.EXPO_PUBLIC_MOCK_USDT_BALANCE ?? '0');
+            if (mockBalance > 0) {
+                balanceUSDT = mockBalance;
+            } else if (address) {
                 balanceUSDT = await readOnChainUSDT(address);
+            }
 
-                if (balanceUSDT > 0) {
-                    try {
-                        // Combien d'EUR Transak versera réellement pour ce montant USDT
-                        const { data } = await api.get<{ fiatAmount: number }>(
-                            '/quotes/sell',
-                            { params: { cryptoAmount: balanceUSDT.toFixed(6) } }
-                        );
-                        balanceEUR = data.fiatAmount;
-                    } catch {
-                        // Fallback : ~3% frais Transak estimés
-                        balanceEUR = parseFloat((balanceUSDT * 0.97).toFixed(2));
-                    }
+            if (balanceUSDT > 0) {
+                try {
+                    // Combien d'EUR Transak versera réellement pour ce montant USDT
+                    const { data } = await api.get<{ fiatAmount: number }>(
+                        '/quotes/sell',
+                        { params: { cryptoAmount: balanceUSDT.toFixed(6) } }
+                    );
+                    balanceEUR = data.fiatAmount;
+                } catch {
+                    // Fallback : ~3% frais Transak estimés
+                    balanceEUR = parseFloat((balanceUSDT * 0.97).toFixed(2));
                 }
             }
 
@@ -141,7 +138,8 @@ export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }, 15000);
 
         return () => clearInterval(interval);
-    }, [user]);
+    // address ajouté : relance quand le wallet Web3Auth est résolu après le login
+    }, [user, address]);
 
 
     const initiateWithdrawal = async (amount: number): Promise<boolean> => {
