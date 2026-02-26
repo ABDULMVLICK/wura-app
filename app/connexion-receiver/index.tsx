@@ -45,7 +45,7 @@ export default function ReceiverLoginScreen() {
             Toast.show({
                 type: 'success',
                 text1: 'Connexion Réussie',
-                text2: `Wallet prêt : ${web3AuthResult.address.substring(0, 8)}...`
+                text2: 'Bon retour sur Wura !'
             });
 
             // La redirection est gérée automatiquement par AuthContext dans _layout.tsx

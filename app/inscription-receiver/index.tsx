@@ -55,8 +55,8 @@ export default function ReceiverSignupScreen() {
 
             Toast.show({
                 type: 'success',
-                text1: walletAddress ? 'Wallet Généré' : 'Compte Créé',
-                text2: walletAddress ? `Adresse: ${walletAddress.substring(0, 8)}...` : 'Bienvenue sur Wura!'
+                text1: 'Compte Créé',
+                text2: 'Bienvenue sur Wura !'
             });
 
             // 5. Termine le Onboarding
