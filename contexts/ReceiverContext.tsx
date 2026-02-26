@@ -101,9 +101,17 @@ export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             // Le mock ne nécessite pas d'adresse — vérifié avant le guard if (address)
             const mockBalance = Number(Constants.expoConfig?.extra?.mockUsdtBalance ?? 0);
             if (mockBalance > 0) {
-                // Mode test : calcul local, pas d'appel API (indépendant du backend)
                 balanceUSDT = mockBalance;
-                balanceEUR = parseFloat((balanceUSDT * 0.97).toFixed(2));
+                // Appel API pour afficher le vrai montant EUR (même en mode test)
+                try {
+                    const { data } = await api.get<{ fiatAmount: number }>(
+                        '/quotes/sell',
+                        { params: { cryptoAmount: balanceUSDT.toFixed(6) } }
+                    );
+                    balanceEUR = Math.max(0, data.fiatAmount);
+                } catch {
+                    balanceEUR = parseFloat((balanceUSDT * 0.97).toFixed(2));
+                }
             } else if (address) {
                 balanceUSDT = await readOnChainUSDT(address);
 

@@ -77,12 +77,56 @@ export interface TransakOffRampProps {
 // ---------------------------------------------------------------------------
 const INJECTED_JS = `
 (function() {
+  // 1. Relaye les événements Transak vers React Native
   window.addEventListener('message', function(e) {
     try {
       var payload = typeof e.data === 'string' ? e.data : JSON.stringify(e.data);
       window.ReactNativeWebView.postMessage(payload);
     } catch (_) {}
   });
+
+  // 2. Auto-sélection de l'option de conformité ("purpose of transaction")
+  //    Transak affiche une étape avec des radio buttons avant l'IBAN.
+  //    On sélectionne automatiquement l'option "investment" et on valide.
+  function tryAutoCompliance() {
+    var inputs = document.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+    for (var i = 0; i < inputs.length; i++) {
+      var input = inputs[i];
+      if (input.checked) continue; // déjà sélectionné
+      var label = document.querySelector('label[for="' + input.id + '"]')
+                  || input.closest('label')
+                  || input.parentElement;
+      var text = (label ? label.innerText || label.textContent : '').toLowerCase();
+      if (text.indexOf('invest') !== -1) {
+        input.click();
+        // Cliquer "Continue" / "Next" après un court délai
+        setTimeout(function() {
+          var btns = document.querySelectorAll('button');
+          for (var j = 0; j < btns.length; j++) {
+            var t = (btns[j].innerText || btns[j].textContent).toLowerCase();
+            if (t.indexOf('continue') !== -1 || t.indexOf('next') !== -1 || t.indexOf('confirm') !== -1) {
+              btns[j].click();
+              break;
+            }
+          }
+        }, 400);
+        return;
+      }
+    }
+  }
+
+  // Observer les changements du DOM pour attraper l'étape compliance au bon moment
+  var observer = new MutationObserver(tryAutoCompliance);
+  function startObserver() {
+    if (document.body) {
+      observer.observe(document.body, { childList: true, subtree: true });
+      tryAutoCompliance();
+    } else {
+      setTimeout(startObserver, 100);
+    }
+  }
+  startObserver();
+
   true;
 })();
 `;
