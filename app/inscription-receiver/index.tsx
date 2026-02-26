@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, signInWithCredential } from "@react-native-firebase/auth";
+import { signInWithCustomToken } from "@react-native-firebase/auth";
 import { Link, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, Image, Text, TouchableOpacity, View } from "r
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { useWeb3Auth } from "../../contexts/Web3AuthContext";
+import api from "../../lib/api";
 import { auth } from "../../lib/firebase";
 import { AuthService } from "../../services/auth";
 
@@ -21,7 +22,7 @@ export default function ReceiverSignupScreen() {
     const handleGoogleSignup = async () => {
         setLoading(true);
         try {
-            // 1. Web3Auth login Google → 1 seul dialog → retourne wallet + oAuthIdToken (Google ID token)
+            // 1. Web3Auth login Google → 1 seul dialog → retourne wallet + idToken Web3Auth
             const web3AuthResult = await loginWithGoogle();
             if (!web3AuthResult) {
                 throw new Error("Connexion Web3Auth annulée.");
@@ -29,21 +30,26 @@ export default function ReceiverSignupScreen() {
 
             const walletAddress = web3AuthResult.address;
 
-            // 2. Récupère le Google ID token depuis Web3Auth (pas de 2e dialog)
-            const googleIdToken = web3AuthResult.userInfo?.oAuthIdToken;
-            if (!googleIdToken) {
-                throw new Error("Token Google introuvable depuis Web3Auth.");
+            // 2. Échange le JWT Web3Auth contre un Firebase Custom Token via le backend
+            // (Web3Auth SAPPHIRE_DEVNET ne retourne pas oAuthIdToken, seulement son propre idToken)
+            const web3AuthIdToken = web3AuthResult.userInfo?.idToken;
+            if (!web3AuthIdToken) {
+                throw new Error("Token Web3Auth introuvable.");
             }
 
-            // 3. Authentification Firebase avec le même token (sans dialog supplémentaire)
-            const googleCredential = GoogleAuthProvider.credential(googleIdToken);
-            const userCredential = await signInWithCredential(auth, googleCredential);
+            const { data } = await api.post<{ firebaseToken: string }>(
+                '/auth/firebase-custom-token',
+                { idToken: web3AuthIdToken }
+            );
+
+            // 3. Authentification Firebase avec le custom token
+            const userCredential = await signInWithCustomToken(auth, data.firebaseToken);
             const user = userCredential.user;
 
             // 4. Crée le profil PostgreSQL
             await AuthService.registerReceiver({
-                firstName: user.displayName?.split(" ")[0] || web3AuthResult.userInfo?.name?.split(" ")[0] || "",
-                lastName: user.displayName?.split(" ").slice(1).join(" ") || web3AuthResult.userInfo?.name?.split(" ").slice(1).join(" ") || "",
+                firstName: web3AuthResult.userInfo?.name?.split(" ")[0] || "",
+                lastName: web3AuthResult.userInfo?.name?.split(" ").slice(1).join(" ") || "",
                 web3AuthWalletAddress: walletAddress,
             });
 
