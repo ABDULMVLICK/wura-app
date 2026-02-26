@@ -25,3 +25,7 @@ __tests__/
 
 # Submodule backend (pas besoin côté app mobile)
 wura-api/
+
+# Dossiers natifs générés localement (EAS les génère lui-même via expo prebuild)
+ios/
+android/

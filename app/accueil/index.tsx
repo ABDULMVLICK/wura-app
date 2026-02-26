@@ -17,6 +17,7 @@ export default function HomeScreen() {
     const { profile } = useAuth();
     const [transakVisible, setTransakVisible] = useState(false);
     const balance = state.balanceEUR;
+    const balanceUSDT = state.balanceUSDT;
 
     return (
         <SafeAreaView className="flex-1 bg-background">
@@ -117,6 +118,8 @@ export default function HomeScreen() {
             <TransakOffRamp
                 visible={transakVisible}
                 onClose={() => setTransakVisible(false)}
+                balanceEUR={balance}
+                balanceUSDT={balanceUSDT}
             />
         </SafeAreaView>
     );

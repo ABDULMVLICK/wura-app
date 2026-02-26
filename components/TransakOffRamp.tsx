@@ -1,5 +1,5 @@
-import { AlertCircle, CheckCircle, X } from 'lucide-react-native';
-import { useCallback, useRef, useState } from 'react';
+import { AlertCircle, ArrowRight, CheckCircle, X } from 'lucide-react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -14,19 +14,22 @@ import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useWeb3Auth } from '../contexts/Web3AuthContext';
 
 // ---------------------------------------------------------------------------
-// Constants
+// Constants (internes — jamais affichées à l'utilisateur)
 // ---------------------------------------------------------------------------
 
 const TRANSAK_BASE_URL = 'https://global-stg.transak.com';
 const TRANSAK_API_KEY = process.env.EXPO_PUBLIC_TRANSAK_API_KEY ?? '';
 
-// USDT sur Polygon Mainnet — 6 décimales
-// En staging Transak utilise le réseau Polygon Mainnet pour USDT
 const USDT_ADDRESS_POLYGON = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
-const POLYGON_MAINNET_RPC = 'https://polygon-rpc.com';
 
-// ABI minimal ERC-20 (transfer + balanceOf)
-const ERC20_TRANSFER_ABI = [
+const POLYGON_RPCS = [
+    'https://rpc.ankr.com/polygon',
+    'https://polygon.llamarpc.com',
+    'https://polygon-bor-rpc.publicnode.com',
+    'https://polygon-rpc.com',
+];
+
+const ERC20_ABI = [
     'function transfer(address to, uint256 amount) returns (bool)',
     'function balanceOf(address owner) view returns (uint256)',
 ];
@@ -35,16 +38,18 @@ const ERC20_TRANSFER_ABI = [
 // Helpers
 // ---------------------------------------------------------------------------
 
-function buildTransakUrl(walletAddress: string | null): string {
+function buildTransakUrl(walletAddress: string | null, usdtAmount: number): string {
     const params = new URLSearchParams({
         apiKey: TRANSAK_API_KEY,
         environment: 'STAGING',
-        productsAvailed: 'SELL',       // Off-ramp uniquement
+        productsAvailed: 'SELL',
         cryptoCurrencyCode: 'USDT',
         network: 'polygon',
         fiatCurrency: 'EUR',
-        isFeeCalculationHidden: 'true',
+        paymentMethod: 'sepa_bank_transfer_instant', // SEPA Instant — règlement en quelques secondes
         disableWalletAddressForm: 'true',
+        isFeeCalculationHidden: 'true',
+        defaultCryptoAmount: usdtAmount.toFixed(6),
         ...(walletAddress ? { walletAddress } : {}),
     });
     return `${TRANSAK_BASE_URL}?${params.toString()}`;
@@ -54,16 +59,20 @@ function buildTransakUrl(walletAddress: string | null): string {
 // Types
 // ---------------------------------------------------------------------------
 
+type Step = 'loading' | 'confirm' | 'widget';
 type TxStatus = 'idle' | 'sending' | 'success' | 'error';
 
 export interface TransakOffRampProps {
     visible: boolean;
     onClose: () => void;
+    /** EUR nets que Transak versera (calculé depuis le solde on-chain dans ReceiverContext) */
+    balanceEUR: number;
+    /** Solde USDT réel sur Polygon — source de vérité pour defaultCryptoAmount */
+    balanceUSDT: number;
 }
 
 // ---------------------------------------------------------------------------
-// Injected JS — intercepte les événements postMessage de Transak
-// et les relaie vers React Native via window.ReactNativeWebView.postMessage
+// Injected JS
 // ---------------------------------------------------------------------------
 const INJECTED_JS = `
 (function() {
@@ -81,21 +90,45 @@ const INJECTED_JS = `
 // Component
 // ---------------------------------------------------------------------------
 
-export function TransakOffRamp({ visible, onClose }: TransakOffRampProps) {
+export function TransakOffRamp({ visible, onClose, balanceEUR, balanceUSDT }: TransakOffRampProps) {
     const { provider, address } = useWeb3Auth();
     const webViewRef = useRef<WebView>(null);
+
+    const [step, setStep] = useState<Step>('confirm');
+    // Montant USDT interne (jamais affiché à l'utilisateur)
+    const [usdtAmount, setUsdtAmount] = useState(0);
 
     const [txStatus, setTxStatus] = useState<TxStatus>('idle');
     const [txHash, setTxHash] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-    const transakUrl = buildTransakUrl(address);
+    // -----------------------------------------------------------------------
+    // balanceUSDT vient directement du solde on-chain (ReceiverContext)
+    // Pas de conversion : on envoie exactement ce que le wallet contient
+    // -----------------------------------------------------------------------
+    useEffect(() => {
+        if (visible) {
+            setUsdtAmount(balanceUSDT);
+            setStep('confirm');
+        }
+    }, [visible, balanceUSDT]);
 
     // -----------------------------------------------------------------------
-    // Envoi automatique des USDT vers l'adresse de dépôt Transak
+    // Envoi automatique vers Transak (déclenché par ORDER_CREATED)
     // -----------------------------------------------------------------------
     const sendUsdt = useCallback(
         async (transakDepositAddress: string, cryptoAmount: number) => {
+            // Mock mode : bypass blockchain pour les tests (EXPO_PUBLIC_MOCK_USDT_BALANCE > 0)
+            const isMock = parseFloat(process.env.EXPO_PUBLIC_MOCK_USDT_BALANCE ?? '0') > 0;
+            if (isMock) {
+                console.log(`[TransakOffRamp] 🧪 Mock mode: simulation TX vers ${transakDepositAddress} (${cryptoAmount} USDT)`);
+                setTxStatus('sending');
+                await new Promise(r => setTimeout(r, 1500)); // simule latence réseau
+                setTxHash('0xMOCK_TEST_' + Date.now().toString(16));
+                setTxStatus('success');
+                return;
+            }
+
             if (!provider) {
                 setErrorMsg('Wallet non connecté. Reconnectez-vous.');
                 setTxStatus('error');
@@ -107,26 +140,28 @@ export function TransakOffRamp({ visible, onClose }: TransakOffRampProps) {
                 setErrorMsg(null);
 
                 const { Wallet, JsonRpcProvider, Contract, parseUnits } = require('ethers');
-
-                // 1. Récupère la clé privée depuis le provider Web3Auth
                 const privKey: string = await provider.request({ method: 'eth_private_key' });
 
-                // 2. Connecte le wallet à Polygon Mainnet (où vit l'USDT)
-                //    Note : la clé privée Web3Auth fonctionne sur tous les réseaux EVM
-                const rpcProvider = new JsonRpcProvider(POLYGON_MAINNET_RPC);
+                let rpcProvider = null;
+                for (const rpc of POLYGON_RPCS) {
+                    try {
+                        const p = new JsonRpcProvider(rpc);
+                        await Promise.race([
+                            p.getBlockNumber(),
+                            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
+                        ]);
+                        rpcProvider = p;
+                        break;
+                    } catch { /* essai suivant */ }
+                }
+                if (!rpcProvider) throw new Error('Aucun réseau disponible pour signer la transaction.');
+
                 const wallet = new Wallet(privKey, rpcProvider);
-
-                // 3. Instancie le contrat USDT Polygon
-                const usdtContract = new Contract(USDT_ADDRESS_POLYGON, ERC20_TRANSFER_ABI, wallet);
-
-                // 4. Convertit le montant en unités de base (6 décimales pour USDT)
+                const usdtContract = new Contract(USDT_ADDRESS_POLYGON, ERC20_ABI, wallet);
                 const amountWei = parseUnits(cryptoAmount.toFixed(6), 6);
 
-                // 5. Envoie la transaction
                 const tx = await usdtContract.transfer(transakDepositAddress, amountWei);
                 console.log('[TransakOffRamp] TX broadcast:', tx.hash);
-
-                // 6. Attend la confirmation on-chain
                 await tx.wait();
                 console.log('[TransakOffRamp] TX confirmée:', tx.hash);
 
@@ -134,7 +169,7 @@ export function TransakOffRamp({ visible, onClose }: TransakOffRampProps) {
                 setTxStatus('success');
             } catch (err: any) {
                 console.error('[TransakOffRamp] Erreur TX:', err);
-                setErrorMsg(err?.reason ?? err?.message ?? 'Erreur lors de l\'envoi des USDT');
+                setErrorMsg(err?.reason ?? err?.message ?? 'Erreur lors du virement.');
                 setTxStatus('error');
             }
         },
@@ -142,71 +177,61 @@ export function TransakOffRamp({ visible, onClose }: TransakOffRampProps) {
     );
 
     // -----------------------------------------------------------------------
-    // Écoute les événements émis par le widget Transak via postMessage
+    // Écoute des événements Transak
     // -----------------------------------------------------------------------
     const handleWebViewMessage = useCallback(
         (event: WebViewMessageEvent) => {
             try {
                 const raw = event.nativeEvent.data;
                 const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                console.log('[TransakOffRamp] Event:', parsed?.event_id);
 
-                console.log('[TransakOffRamp] Event reçu:', parsed?.event_id);
-
-                // Transak order créé → l'utilisateur a confirmé son retrait côté Transak
                 if (
                     parsed?.event_id === 'TRANSAK_ORDER_CREATED' ||
                     parsed?.event_id === 'ORDER_CREATED'
                 ) {
                     const order = parsed?.data;
-
-                    // Adresse de dépôt Transak (où envoyer les USDT)
                     const depositAddress: string | undefined = order?.walletAddress;
-                    // Montant USDT à envoyer
                     const cryptoAmount: number | undefined =
                         order?.cryptoAmount ?? order?.crypto_amount;
 
-                    if (!depositAddress || !cryptoAmount) {
-                        console.warn('[TransakOffRamp] Payload ORDER_CREATED incomplet', order);
-                        return;
-                    }
+                    if (!depositAddress || !cryptoAmount) return;
 
                     Alert.alert(
-                        'Envoi automatique',
-                        `Signature et envoi de ${cryptoAmount} USDT vers Transak en cours…`,
+                        'Virement en cours',
+                        'Votre retrait est en cours de traitement…',
                         [{ text: 'OK' }],
                         { cancelable: false },
                     );
 
                     sendUsdt(depositAddress, Number(cryptoAmount));
                 }
-            } catch (_) {
-                // Message non-JSON (ex : analytics internes du widget) — on ignore
-            }
+            } catch (_) {}
         },
         [sendUsdt],
     );
 
     // -----------------------------------------------------------------------
-    // Fermeture et reset
+    // Reset à la fermeture
     // -----------------------------------------------------------------------
     const handleClose = () => {
+        setStep('confirm');
+        setUsdtAmount(0);
         setTxStatus('idle');
         setTxHash(null);
         setErrorMsg(null);
         onClose();
     };
 
+    const transakUrl = buildTransakUrl(address, usdtAmount);
+
     // -----------------------------------------------------------------------
     // Render
     // -----------------------------------------------------------------------
     return (
-        <Modal
-            visible={visible}
-            animationType="slide"
-            onRequestClose={handleClose}
-        >
+        <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
             <SafeAreaView style={styles.container}>
-                {/* ── Header ─────────────────────────────────────────────── */}
+                {/* Header */}
                 <View style={styles.header}>
                     <Text style={styles.headerTitle}>Retrait vers ma banque</Text>
                     <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
@@ -214,93 +239,155 @@ export function TransakOffRamp({ visible, onClose }: TransakOffRampProps) {
                     </TouchableOpacity>
                 </View>
 
-                {/* ── Overlay de statut TX ────────────────────────────────── */}
-                {txStatus !== 'idle' && (
-                    <View style={styles.overlay}>
-                        {txStatus === 'sending' && <SendingView />}
-                        {txStatus === 'success' && (
-                            <SuccessView txHash={txHash} onClose={handleClose} />
-                        )}
-                        {txStatus === 'error' && (
-                            <ErrorView
-                                message={errorMsg}
-                                onRetry={() => setTxStatus('idle')}
-                            />
+                {/* ── Confirmation ────────────────────────────────────────── */}
+                {step === 'confirm' && (
+                    <View style={styles.confirmScreen}>
+                        {balanceUSDT <= 0 ? (
+                            /* Solde vide */
+                            <View style={styles.stateCard}>
+                                <Text style={styles.emptyEmoji}>💰</Text>
+                                <Text style={styles.stateTitle}>Aucun fonds disponible</Text>
+                                <Text style={styles.stateText}>
+                                    Vous n'avez pas encore de fonds à retirer.{'\n'}
+                                    Attendez qu'un envoi soit effectué en votre nom.
+                                </Text>
+                                <TouchableOpacity onPress={handleClose} style={styles.secondaryBtn}>
+                                    <Text style={styles.secondaryBtnText}>Retour à l'accueil</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            /* Solde disponible */
+                            <>
+                                <View style={styles.balanceCard}>
+                                    <Text style={styles.balanceLabel}>Vous allez recevoir</Text>
+                                    <Text style={styles.balanceEur}>
+                                        {balanceEUR.toLocaleString('fr-FR', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        })} €
+                                    </Text>
+                                    <View style={styles.badge}>
+                                        <Text style={styles.badgeText}>Virement SEPA Instant · quelques secondes</Text>
+                                    </View>
+                                </View>
+
+                                <Text style={styles.infoText}>
+                                    Ce montant sera viré directement sur votre compte bancaire.
+                                    Vous aurez juste besoin de renseigner votre IBAN.
+                                </Text>
+
+                                <TouchableOpacity
+                                    onPress={() => setStep('widget')}
+                                    style={styles.primaryBtn}
+                                >
+                                    <Text style={styles.primaryBtnText}>Retirer vers ma banque</Text>
+                                    <ArrowRight size={20} color="#ffffff" />
+                                </TouchableOpacity>
+                            </>
                         )}
                     </View>
                 )}
 
-                {/* ── Widget Transak ──────────────────────────────────────── */}
-                <WebView
-                    ref={webViewRef}
-                    source={{ uri: transakUrl }}
-                    injectedJavaScript={INJECTED_JS}
-                    onMessage={handleWebViewMessage}
-                    javaScriptEnabled
-                    domStorageEnabled
-                    style={styles.webview}
-                    startInLoadingState
-                    renderLoading={() => (
-                        <View style={styles.loadingContainer}>
-                            <ActivityIndicator size="large" color="#1a1a2e" />
-                            <Text style={styles.loadingText}>Chargement du widget…</Text>
-                        </View>
-                    )}
-                />
+                {/* ── Widget Transak ───────────────────────────────────────── */}
+                {step === 'widget' && (
+                    <>
+                        {txStatus !== 'idle' && (
+                            <View style={styles.overlay}>
+                                {txStatus === 'sending' && <SendingView />}
+                                {txStatus === 'success' && (
+                                    <SuccessView
+                                        eurAmount={balanceEUR}
+                                        txHash={txHash}
+                                        onClose={handleClose}
+                                    />
+                                )}
+                                {txStatus === 'error' && (
+                                    <ErrorView
+                                        message={errorMsg}
+                                        onRetry={() => setTxStatus('idle')}
+                                    />
+                                )}
+                            </View>
+                        )}
+                        <WebView
+                            ref={webViewRef}
+                            source={{ uri: transakUrl }}
+                            injectedJavaScript={INJECTED_JS}
+                            onMessage={handleWebViewMessage}
+                            javaScriptEnabled
+                            domStorageEnabled
+                            style={styles.webview}
+                            startInLoadingState
+                            renderLoading={() => (
+                                <View style={styles.loadingContainer}>
+                                    <ActivityIndicator size="large" color="#1a1a2e" />
+                                    <Text style={styles.loadingSubText}>Chargement…</Text>
+                                </View>
+                            )}
+                        />
+                    </>
+                )}
             </SafeAreaView>
         </Modal>
     );
 }
 
 // ---------------------------------------------------------------------------
-// Sub-components (status views)
+// Sub-components
 // ---------------------------------------------------------------------------
 
 function SendingView() {
     return (
         <View style={styles.statusContent}>
             <ActivityIndicator size="large" color="#1a1a2e" style={{ marginBottom: 20 }} />
-            <Text style={styles.statusTitle}>Envoi des USDT en cours…</Text>
+            <Text style={styles.statusTitle}>Traitement en cours…</Text>
             <Text style={styles.statusSub}>
-                Votre transaction est signée et diffusée sur Polygon. Patientez quelques secondes.
+                Votre retrait est en cours de traitement. Patientez quelques secondes.
             </Text>
         </View>
     );
 }
 
-function SuccessView({ txHash, onClose }: { txHash: string | null; onClose: () => void }) {
+function SuccessView({
+    eurAmount,
+    txHash,
+    onClose,
+}: {
+    eurAmount: number;
+    txHash: string | null;
+    onClose: () => void;
+}) {
     return (
         <View style={styles.statusContent}>
             <CheckCircle size={64} color="#059669" style={{ marginBottom: 16 }} />
-            <Text style={styles.statusTitle}>USDT envoyés !</Text>
+            <Text style={styles.statusTitle}>Retrait initié !</Text>
             <Text style={styles.statusSub}>
-                Transak traite votre retrait. Les euros seront virés sur votre compte sous 1–3 jours ouvrés.
+                {eurAmount > 0
+                    ? `${eurAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} € seront virés instantanément sur votre compte bancaire.`
+                    : 'Les fonds seront virés instantanément sur votre compte bancaire.'
+                }
             </Text>
             {txHash && (
                 <Text style={styles.txHash} numberOfLines={2}>
-                    TX : {txHash.slice(0, 22)}…
+                    Réf. : {txHash.slice(0, 22)}…
                 </Text>
             )}
-            <TouchableOpacity onPress={onClose} style={styles.primaryBtn}>
+            <TouchableOpacity onPress={onClose} style={[styles.primaryBtn, { marginTop: 28 }]}>
                 <Text style={styles.primaryBtnText}>Fermer</Text>
             </TouchableOpacity>
         </View>
     );
 }
 
-function ErrorView({
-    message,
-    onRetry,
-}: {
-    message: string | null;
-    onRetry: () => void;
-}) {
+function ErrorView({ message, onRetry }: { message: string | null; onRetry: () => void }) {
     return (
         <View style={styles.statusContent}>
             <AlertCircle size={64} color="#dc2626" style={{ marginBottom: 16 }} />
             <Text style={styles.statusTitle}>Une erreur est survenue</Text>
-            <Text style={[styles.statusSub, { color: '#dc2626' }]}>{message ?? 'Erreur inconnue'}</Text>
-            <TouchableOpacity onPress={onRetry} style={styles.primaryBtn}>
+            <Text style={[styles.statusSub, { color: '#dc2626' }]}>
+                {message ?? 'Veuillez réessayer.'}
+            </Text>
+            <TouchableOpacity onPress={onRetry} style={[styles.primaryBtn, { marginTop: 28 }]}>
                 <Text style={styles.primaryBtnText}>Réessayer</Text>
             </TouchableOpacity>
         </View>
@@ -312,10 +399,7 @@ function ErrorView({
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#ffffff',
-    },
+    container: { flex: 1, backgroundColor: '#ffffff' },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -325,77 +409,86 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#e5e7eb',
     },
-    headerTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#1a1a2e',
-    },
+    headerTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a2e' },
     closeBtn: {
-        height: 32,
-        width: 32,
-        borderRadius: 16,
+        height: 32, width: 32, borderRadius: 16,
         backgroundColor: '#f3f4f6',
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: 'center', justifyContent: 'center',
     },
-    webview: {
-        flex: 1,
+    // Loading
+    centeredScreen: {
+        flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40,
     },
+    loadingTitle: { fontSize: 17, fontWeight: '700', color: '#1a1a2e', marginBottom: 8 },
+    loadingSubText: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 20 },
     loadingContainer: {
         ...StyleSheet.absoluteFillObject,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#ffffff',
+        alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff',
     },
-    loadingText: {
-        marginTop: 12,
-        fontSize: 14,
-        color: '#6b7280',
+    // Confirm
+    confirmScreen: {
+        flex: 1, alignItems: 'center', justifyContent: 'center',
+        paddingHorizontal: 28, paddingBottom: 40,
     },
-    overlay: {
-        ...StyleSheet.absoluteFillObject,
-        zIndex: 10,
-        backgroundColor: 'rgba(255,255,255,0.96)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 32,
-        // Pousse l'overlay sous le header
-        top: 60,
+    balanceCard: {
+        width: '100%', backgroundColor: '#1a1a2e',
+        borderRadius: 24, padding: 32,
+        alignItems: 'center', marginBottom: 24,
     },
-    statusContent: {
-        alignItems: 'center',
-        width: '100%',
+    balanceLabel: {
+        fontSize: 13, color: 'rgba(255,255,255,0.6)',
+        marginBottom: 8, fontWeight: '500',
     },
-    statusTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: '#1a1a2e',
-        textAlign: 'center',
-        marginBottom: 12,
+    balanceEur: {
+        fontSize: 48, fontWeight: '800',
+        color: '#ffffff', letterSpacing: -1, marginBottom: 14,
     },
-    statusSub: {
-        fontSize: 14,
-        color: '#6b7280',
-        textAlign: 'center',
-        lineHeight: 20,
+    badge: {
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6,
     },
-    txHash: {
-        marginTop: 12,
-        fontSize: 11,
-        color: '#9ca3af',
-        fontFamily: 'monospace',
-        textAlign: 'center',
+    badgeText: { fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
+    infoText: {
+        fontSize: 13, color: '#6b7280', textAlign: 'center',
+        lineHeight: 20, marginBottom: 28, paddingHorizontal: 8,
     },
     primaryBtn: {
-        marginTop: 28,
-        backgroundColor: '#1a1a2e',
-        borderRadius: 24,
-        paddingHorizontal: 36,
-        paddingVertical: 14,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+        backgroundColor: '#1a1a2e', borderRadius: 24,
+        paddingHorizontal: 28, paddingVertical: 16, width: '100%',
     },
-    primaryBtnText: {
-        color: '#ffffff',
-        fontWeight: '700',
-        fontSize: 15,
+    primaryBtnText: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
+    secondaryBtn: {
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        borderWidth: 1.5, borderColor: '#1a1a2e',
+        borderRadius: 20, paddingHorizontal: 20, paddingVertical: 10,
+        marginTop: 20,
+    },
+    secondaryBtnText: { fontSize: 14, fontWeight: '600', color: '#1a1a2e' },
+    // State cards (empty / error)
+    stateCard: { alignItems: 'center', paddingHorizontal: 16 },
+    stateTitle: { fontSize: 20, fontWeight: '700', color: '#1a1a2e', marginBottom: 10 },
+    stateText: {
+        fontSize: 14, color: '#6b7280', textAlign: 'center',
+        lineHeight: 22, marginBottom: 4,
+    },
+    emptyEmoji: { fontSize: 56, marginBottom: 16 },
+    // Widget
+    webview: { flex: 1 },
+    overlay: {
+        ...StyleSheet.absoluteFillObject, zIndex: 10,
+        backgroundColor: 'rgba(255,255,255,0.96)',
+        alignItems: 'center', justifyContent: 'center',
+        paddingHorizontal: 32, top: 60,
+    },
+    statusContent: { alignItems: 'center', width: '100%' },
+    statusTitle: {
+        fontSize: 20, fontWeight: '700', color: '#1a1a2e',
+        textAlign: 'center', marginBottom: 12,
+    },
+    statusSub: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 20 },
+    txHash: {
+        marginTop: 12, fontSize: 11, color: '#9ca3af',
+        fontFamily: 'monospace', textAlign: 'center',
     },
 });

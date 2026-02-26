@@ -5,8 +5,17 @@ import { TransactionInfo } from '../types/transaction';
 import { useAuth } from './AuthContext';
 import { useWeb3Auth } from './Web3AuthContext';
 
+const USDT_CONTRACT_POLYGON = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
+const POLYGON_RPCS = [
+    'https://rpc.ankr.com/polygon',
+    'https://polygon.llamarpc.com',
+    'https://polygon-bor-rpc.publicnode.com',
+    'https://polygon-rpc.com',
+];
+
 export interface ReceiverState {
-    balanceEUR: number;
+    balanceEUR: number;   // EUR nets que Transak versera (calculé depuis le solde on-chain)
+    balanceUSDT: number;  // Solde USDT réel sur Polygon — source de vérité
     recentTransactions: TransactionInfo[];
     isLoading: boolean;
 }
@@ -17,14 +26,45 @@ interface ReceiverContextType {
     refreshBalance: () => Promise<void>;
 }
 
-// Initial state starts empty, with 0 balance
 const defaultState: ReceiverState = {
     balanceEUR: 0.00,
+    balanceUSDT: 0,
     recentTransactions: [],
     isLoading: true
 };
 
 const ReceiverContext = createContext<ReceiverContextType | undefined>(undefined);
+
+// ---------------------------------------------------------------------------
+// Lit le solde USDT on-chain du wallet via ethers.js + RPC Polygon
+// Si EXPO_PUBLIC_MOCK_USDT_BALANCE > 0, bypass la blockchain (test uniquement)
+// ---------------------------------------------------------------------------
+async function readOnChainUSDT(walletAddress: string): Promise<number> {
+    const mockBalance = parseFloat(process.env.EXPO_PUBLIC_MOCK_USDT_BALANCE ?? '0');
+    if (mockBalance > 0) {
+        console.log(`[ReceiverContext] 🧪 Mock mode: solde USDT simulé = ${mockBalance} USDT`);
+        return mockBalance;
+    }
+
+    const { JsonRpcProvider, Contract, formatUnits } = require('ethers');
+    for (const rpc of POLYGON_RPCS) {
+        try {
+            const provider = new JsonRpcProvider(rpc);
+            await Promise.race([
+                provider.getBlockNumber(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
+            ]);
+            const contract = new Contract(
+                USDT_CONTRACT_POLYGON,
+                ['function balanceOf(address owner) view returns (uint256)'],
+                provider
+            );
+            const raw = await contract.balanceOf(walletAddress);
+            return parseFloat(formatUnits(raw, 6));
+        } catch { /* essai RPC suivant */ }
+    }
+    return 0;
+}
 
 export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, setState] = useState<ReceiverState>(defaultState);
@@ -41,16 +81,14 @@ export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, [user, address, profile]);
 
     const refreshBalance = async () => {
-        // Only fetch if a user is authenticated
         if (!user) {
             setState(prev => ({ ...prev, isLoading: false }));
             return;
         }
         setState(prev => ({ ...prev, isLoading: true }));
         try {
+            // 1. Historique des transactions (pour l'affichage uniquement)
             const history = await TransferService.getHistory();
-
-            // Format API data to match the UI expected structure
             const formattedHistory: any[] = history.map((tx: any) => ({
                 id: tx.referenceId || tx.id,
                 amountEUR: Number(tx.amountFiatOutExpected || tx.amountEUR || 0),
@@ -59,19 +97,36 @@ export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 status: tx.status
             }));
 
-            // Calculate balance from fully completed transactions only
-            const totalReceived = formattedHistory
-                .filter((tx: any) => tx.status === 'COMPLETED')
-                .reduce((sum: number, tx: any) => sum + tx.amountEUR, 0);
+            // 2. Solde USDT réel sur Polygon (source de vérité)
+            let balanceUSDT = 0;
+            let balanceEUR = 0;
+
+            if (address) {
+                balanceUSDT = await readOnChainUSDT(address);
+
+                if (balanceUSDT > 0) {
+                    try {
+                        // Combien d'EUR Transak versera réellement pour ce montant USDT
+                        const { data } = await api.get<{ fiatAmount: number }>(
+                            '/quotes/sell',
+                            { params: { cryptoAmount: balanceUSDT.toFixed(6) } }
+                        );
+                        balanceEUR = data.fiatAmount;
+                    } catch {
+                        // Fallback : ~3% frais Transak estimés
+                        balanceEUR = parseFloat((balanceUSDT * 0.97).toFixed(2));
+                    }
+                }
+            }
 
             setState(prev => ({
                 ...prev,
                 recentTransactions: formattedHistory,
-                balanceEUR: totalReceived,
+                balanceUSDT,
+                balanceEUR,
                 isLoading: false
             }));
         } catch (error) {
-            // Silently handle polling errors to avoid console spam
             console.warn("Receiver refresh failed (will retry)");
             setState(prev => ({ ...prev, isLoading: false }));
         }
@@ -90,20 +145,18 @@ export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
 
     const initiateWithdrawal = async (amount: number): Promise<boolean> => {
-        // Mock API call to initiate the Off-Ramp process (Mt Pelerin / Ramp)
         return new Promise((resolve) => {
             setTimeout(() => {
                 if (amount <= state.balanceEUR) {
-                    // Update local state to reflect the withdrawal
                     setState(prev => ({
                         ...prev,
-                        balanceEUR: prev.balanceEUR - amount // Deduct balance
+                        balanceEUR: prev.balanceEUR - amount
                     }));
-                    resolve(true); // Success
+                    resolve(true);
                 } else {
-                    resolve(false); // Insufficient funds
+                    resolve(false);
                 }
-            }, 1500); // Simulate network delay
+            }, 1500);
         });
     };
 

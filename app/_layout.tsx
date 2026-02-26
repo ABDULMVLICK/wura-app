@@ -1,8 +1,13 @@
 import { KkiapayProvider } from '@kkiapay-org/react-native-sdk';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import 'react-native-gesture-handler';
+
+// Indispensable sur Android : ferme le Chrome Custom Tab après le redirect OAuth
+// (Web3Auth / expo-web-browser). Sans cet appel, loginWithGoogle() ne se résout jamais.
+WebBrowser.maybeCompleteAuthSession();
 import Toast from 'react-native-toast-message';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
