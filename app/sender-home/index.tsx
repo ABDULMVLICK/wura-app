@@ -13,11 +13,12 @@ interface RecentBeneficiary {
     id: string;
     name: string;
     initial: string;
+    wuraId: string;
 }
 
 export default function SenderHomeScreen() {
     const router = useRouter();
-    const { state: transferState, setInputValue, toggleCurrency, getCalculatedXOF, getCalculatedEUR } = useTransfer();
+    const { state: transferState, setInputValue, toggleCurrency, getCalculatedXOF, getCalculatedEUR, setRecipient } = useTransfer();
     const [recentBeneficiaries, setRecentBeneficiaries] = useState<RecentBeneficiary[]>([]);
 
     const fetchRecentBeneficiaries = useCallback(async () => {
@@ -34,6 +35,7 @@ export default function SenderHomeScreen() {
                         id,
                         name: displayName,
                         initial: displayName.replace("@", "").charAt(0).toUpperCase() || "?",
+                        wuraId,
                     });
                 }
             });
@@ -197,7 +199,10 @@ export default function SenderHomeScreen() {
                                         recentBeneficiaries.map((contact, idx) => {
                                             const colorSet = COLORS[idx % COLORS.length];
                                             return (
-                                                <TouchableOpacity key={contact.id} className="items-center gap-2 w-16">
+                                                <TouchableOpacity key={contact.id} onPress={() => {
+                                                setRecipient({ id: contact.id, wuraId: contact.wuraId, nom: '', prenom: contact.name.replace('@', ''), iban: '', bic: '', banque: '', pays: '' });
+                                                router.push('/sender-home/confirmation-beneficiary');
+                                            }} className="items-center gap-2 w-16">
                                                     <View className={`w-14 h-14 rounded-full items-center justify-center ${colorSet.bg}`}>
                                                         <Text className={`font-bold text-lg ${colorSet.text}`}>{contact.initial}</Text>
                                                     </View>

@@ -61,7 +61,7 @@ export default function ConfirmationBeneficiaryScreen() {
                         {/* Header of the card */}
                         <View className="px-5 py-4 border-b border-gray-100 dark:border-[#3A3124] flex-row items-center justify-between bg-white dark:bg-[#2A2318]">
                             <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">Détails du compte</Text>
-                            <TouchableOpacity>
+                            <TouchableOpacity onPress={() => router.back()}>
                                 <Text className="text-xs font-semibold text-[#064E3B] dark:text-emerald-400">Modifier</Text>
                             </TouchableOpacity>
                         </View>

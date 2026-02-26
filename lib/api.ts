@@ -22,16 +22,27 @@ api.interceptors.request.use(async (config) => {
     return Promise.reject(error);
 });
 
-// Response Interceptor: Gère les erreurs globales (ex: 401 Unauthorized)
+// Response Interceptor: Gère les erreurs 401 avec retry token avant déconnexion
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
-        if (error.response && error.response.status === 401) {
-            // Token expiré ou invalide (guard: only signOut if a user is currently signed in)
-            if (auth.currentUser) {
-                await signOut(auth);
+        const originalRequest = error.config;
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+            const user = auth.currentUser;
+            if (user) {
+                try {
+                    // Force refresh du token Firebase puis retry la requête
+                    const freshToken = await getIdToken(user, true);
+                    originalRequest.headers.Authorization = `Bearer ${freshToken}`;
+                    return api(originalRequest);
+                } catch {
+                    await signOut(auth);
+                    router.replace('/choix');
+                }
+            } else {
+                router.replace('/choix');
             }
-            router.replace('/choix');
         }
         return Promise.reject(error);
     }
