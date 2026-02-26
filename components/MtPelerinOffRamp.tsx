@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import { AlertCircle, CheckCircle, X } from 'lucide-react-native';
+import { AlertCircle, CheckCircle, Clock, X } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -15,11 +15,12 @@ import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useWeb3Auth } from '../contexts/Web3AuthContext';
 
 // ---------------------------------------------------------------------------
-// Constants (internes — jamais affichées à l'utilisateur)
+// Constants
 // ---------------------------------------------------------------------------
 
-const TRANSAK_BASE_URL = 'https://global-stg.transak.com';
-const TRANSAK_API_KEY = process.env.EXPO_PUBLIC_TRANSAK_API_KEY ?? '';
+// Clé de test fournie par Mt Pelerin (fonctionne sur localhost & staging)
+// En production, utiliser EXPO_PUBLIC_MT_PELERIN_API_KEY depuis .env
+const MT_PELERIN_TEST_KEY = 'bec6626e-8913-497d-9835-6e6ae9edb144';
 
 const USDT_ADDRESS_POLYGON = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
 
@@ -36,148 +37,137 @@ const ERC20_ABI = [
 ];
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Construit l'URL Mt Pelerin avec validation d'adresse automatique.
+//
+// Mt Pelerin exige addr + code + hash pour valider le wallet sans KYC manuel :
+//   code = entier aléatoire 1000-9999
+//   hash = base64( signature ECDSA de "MtPelerin-{code}" par la clé du wallet )
+// Ref: https://developers.mtpelerin.com/integration-guides/parameters-and-customization/automating-the-end-user-address-validation
 // ---------------------------------------------------------------------------
+async function buildMtPelerinUrl(
+    walletAddress: string,
+    usdtAmount: number,
+    provider: any,
+): Promise<string> {
+    const apiKey = process.env.EXPO_PUBLIC_MT_PELERIN_API_KEY ?? MT_PELERIN_TEST_KEY;
+    const code = Math.floor(1000 + Math.random() * 9000);
 
-function buildTransakUrl(walletAddress: string | null, usdtAmount: number): string {
+    let hash = '';
+    try {
+        const { Wallet } = require('ethers');
+        const privKey: string = await provider.request({ method: 'eth_private_key' });
+        const wallet = new Wallet(privKey);
+        const rawSignature: string = await wallet.signMessage(`MtPelerin-${code}`);
+        // Convertir la signature hex (sans 0x) en base64
+        hash = Buffer.from(rawSignature.slice(2), 'hex').toString('base64');
+    } catch (err) {
+        console.warn('[MtPelerin] Impossible de générer le hash — validation manuelle requise:', err);
+    }
+
     const params = new URLSearchParams({
-        apiKey: TRANSAK_API_KEY,
-        environment: 'STAGING',
-        productsAvailed: 'SELL',
-        cryptoCurrencyCode: 'USDT',
-        network: 'polygon',
-        fiatCurrency: 'EUR',
-        paymentMethod: 'sepa_bank_transfer_instant', // SEPA Instant — règlement en quelques secondes
-        disableWalletAddressForm: 'true',
-        isFeeCalculationHidden: 'true',
-        defaultCryptoAmount: usdtAmount.toFixed(6),
-        ...(walletAddress ? { walletAddress } : {}),
+        _ctkn: apiKey,
+        type: 'webview',   // mode mobile
+        lang: 'fr',
+        tab: 'sell',       // onglet vente par défaut
+        tabs: 'sell',      // seul l'onglet vente est disponible
+        ssc: 'USDT',       // source crypto (ce que l'utilisateur vend)
+        sdc: 'EUR',        // destination fiat (ce que l'utilisateur reçoit)
+        snet: 'matic_mainnet',  // réseau Polygon
+        ssa: usdtAmount.toFixed(6),  // montant USDT pré-rempli
+        addr: walletAddress,
+        code: code.toString(),
     });
-    return `${TRANSAK_BASE_URL}?${params.toString()}`;
+
+    if (hash) {
+        params.append('hash', encodeURIComponent(hash));
+    }
+
+    return `https://widget.mtpelerin.com/?${params.toString()}`;
 }
 
 // ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-type Step = 'loading' | 'confirm' | 'widget';
-type TxStatus = 'idle' | 'sending' | 'success' | 'error';
-
-export interface TransakOffRampProps {
-    visible: boolean;
-    onClose: () => void;
-    /** Appelé quand le retrait est confirmé avec succès (avant fermeture) */
-    onSuccess?: () => void;
-    /** EUR nets que Transak versera (calculé depuis le solde on-chain dans ReceiverContext) */
-    balanceEUR: number;
-    /** Solde USDT réel sur Polygon — source de vérité pour defaultCryptoAmount */
-    balanceUSDT: number;
-}
-
-// ---------------------------------------------------------------------------
-// Injected JS
+// Injected JS — relaie tous les postMessage du widget vers React Native
 // ---------------------------------------------------------------------------
 const INJECTED_JS = `
 (function() {
-  // 1. Relaye les événements Transak vers React Native
   window.addEventListener('message', function(e) {
     try {
       var payload = typeof e.data === 'string' ? e.data : JSON.stringify(e.data);
       window.ReactNativeWebView.postMessage(payload);
     } catch (_) {}
   });
-
-  // 2. Auto-sélection de l'option de conformité ("purpose of transaction")
-  //    Transak affiche une étape avec des radio buttons avant l'IBAN.
-  //    On sélectionne automatiquement l'option "investment" et on valide.
-  function tryAutoCompliance() {
-    var inputs = document.querySelectorAll('input[type="radio"], input[type="checkbox"]');
-    for (var i = 0; i < inputs.length; i++) {
-      var input = inputs[i];
-      if (input.checked) continue; // déjà sélectionné
-      var label = document.querySelector('label[for="' + input.id + '"]')
-                  || input.closest('label')
-                  || input.parentElement;
-      var text = (label ? label.innerText || label.textContent : '').toLowerCase();
-      if (text.indexOf('invest') !== -1) {
-        input.click();
-        // Cliquer "Continue" / "Next" après un court délai
-        setTimeout(function() {
-          var btns = document.querySelectorAll('button');
-          for (var j = 0; j < btns.length; j++) {
-            var t = (btns[j].innerText || btns[j].textContent).toLowerCase();
-            if (t.indexOf('continue') !== -1 || t.indexOf('next') !== -1 || t.indexOf('confirm') !== -1) {
-              btns[j].click();
-              break;
-            }
-          }
-        }, 400);
-        return;
-      }
-    }
-  }
-
-  // Observer les changements du DOM pour attraper l'étape compliance au bon moment
-  var observer = new MutationObserver(tryAutoCompliance);
-  function startObserver() {
-    if (document.body) {
-      observer.observe(document.body, { childList: true, subtree: true });
-      tryAutoCompliance();
-    } else {
-      setTimeout(startObserver, 100);
-    }
-  }
-  startObserver();
-
   true;
 })();
 `;
 
 // ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type Step = 'loading' | 'widget' | 'confirm';
+type TxStatus = 'idle' | 'sending' | 'success' | 'error';
+
+export interface MtPelerinOffRampProps {
+    visible: boolean;
+    onClose: () => void;
+    onSuccess?: () => void;
+    balanceEUR: number;
+    balanceUSDT: number;
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function TransakOffRamp({ visible, onClose, onSuccess, balanceEUR, balanceUSDT }: TransakOffRampProps) {
+export function MtPelerinOffRamp({ visible, onClose, onSuccess, balanceEUR, balanceUSDT }: MtPelerinOffRampProps) {
     const { provider, address } = useWeb3Auth();
     const webViewRef = useRef<WebView>(null);
 
-    const [step, setStep] = useState<Step>('confirm');
-    // Montant USDT interne (jamais affiché à l'utilisateur)
+    const [step, setStep] = useState<Step>('loading');
+    const [widgetUrl, setWidgetUrl] = useState<string | null>(null);
     const [usdtAmount, setUsdtAmount] = useState(0);
-
     const [txStatus, setTxStatus] = useState<TxStatus>('idle');
     const [txHash, setTxHash] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-    // -----------------------------------------------------------------------
-    // balanceUSDT vient directement du solde on-chain (ReceiverContext)
-    // Pas de conversion : on envoie exactement ce que le wallet contient
-    // -----------------------------------------------------------------------
+    // Construire l'URL (avec signature) à l'ouverture du modal
     useEffect(() => {
-        if (visible) {
-            setUsdtAmount(balanceUSDT);
-            // Si le solde est suffisant, aller directement au widget Transak (source de vérité)
-            // L'écran de confirmation n'est utilisé que pour les erreurs (pas de fonds / solde insuffisant)
-            if (balanceUSDT > 0 && balanceEUR > 0) {
-                setStep('widget');
-            } else {
-                setStep('confirm');
-            }
+        if (!visible) return;
+
+        setUsdtAmount(balanceUSDT);
+
+        if (balanceUSDT <= 0 || balanceEUR <= 0) {
+            setStep('confirm');
+            return;
         }
-    }, [visible, balanceUSDT, balanceEUR]);
+
+        setStep('loading');
+
+        if (!address || !provider) {
+            setStep('confirm');
+            return;
+        }
+
+        buildMtPelerinUrl(address, balanceUSDT, provider)
+            .then(url => {
+                setWidgetUrl(url);
+                setStep('widget');
+            })
+            .catch(() => setStep('confirm'));
+    }, [visible, balanceUSDT, balanceEUR, address, provider]);
 
     // -----------------------------------------------------------------------
-    // Envoi automatique vers Transak (déclenché par ORDER_CREATED)
+    // Envoi USDT vers l'adresse de dépôt Mt Pelerin
+    // Déclenché par l'événement "orderCreated" → data.offRampAddress
     // -----------------------------------------------------------------------
     const sendUsdt = useCallback(
-        async (transakDepositAddress: string, cryptoAmount: number) => {
-            // Mock mode : bypass blockchain pour les tests (EXPO_PUBLIC_MOCK_USDT_BALANCE > 0)
+        async (depositAddress: string, cryptoAmount: number) => {
             const isMock = Number(Constants.expoConfig?.extra?.mockUsdtBalance ?? 0) > 0;
             if (isMock) {
-                console.log(`[TransakOffRamp] 🧪 Mock mode: simulation TX vers ${transakDepositAddress} (${cryptoAmount} USDT)`);
+                console.log(`[MtPelerin] 🧪 Mock: simulation TX vers ${depositAddress} (${cryptoAmount} USDT)`);
                 setTxStatus('sending');
-                await new Promise(r => setTimeout(r, 1500)); // simule latence réseau
-                setTxHash('0xMOCK_TEST_' + Date.now().toString(16));
+                await new Promise(r => setTimeout(r, 1500));
+                setTxHash('0xMOCK_MTP_' + Date.now().toString(16));
                 setTxStatus('success');
                 return;
             }
@@ -207,21 +197,21 @@ export function TransakOffRamp({ visible, onClose, onSuccess, balanceEUR, balanc
                         break;
                     } catch { /* essai suivant */ }
                 }
-                if (!rpcProvider) throw new Error('Aucun réseau disponible pour signer la transaction.');
+                if (!rpcProvider) throw new Error('Aucun réseau disponible.');
 
                 const wallet = new Wallet(privKey, rpcProvider);
                 const usdtContract = new Contract(USDT_ADDRESS_POLYGON, ERC20_ABI, wallet);
                 const amountWei = parseUnits(cryptoAmount.toFixed(6), 6);
 
-                const tx = await usdtContract.transfer(transakDepositAddress, amountWei);
-                console.log('[TransakOffRamp] TX broadcast:', tx.hash);
+                const tx = await usdtContract.transfer(depositAddress, amountWei);
+                console.log('[MtPelerin] TX broadcast:', tx.hash);
                 await tx.wait();
-                console.log('[TransakOffRamp] TX confirmée:', tx.hash);
+                console.log('[MtPelerin] TX confirmée:', tx.hash);
 
                 setTxHash(tx.hash);
                 setTxStatus('success');
             } catch (err: any) {
-                console.error('[TransakOffRamp] Erreur TX:', err);
+                console.error('[MtPelerin] Erreur TX:', err);
                 setErrorMsg(err?.reason ?? err?.message ?? 'Erreur lors du virement.');
                 setTxStatus('error');
             }
@@ -230,29 +220,29 @@ export function TransakOffRamp({ visible, onClose, onSuccess, balanceEUR, balanc
     );
 
     // -----------------------------------------------------------------------
-    // Écoute des événements Transak
+    // Écoute des événements Mt Pelerin
+    //
+    // "orderCreated" : l'utilisateur a confirmé — data.offRampAddress = adresse
+    //                  de dépôt Mt Pelerin, data.valueIn = montant USDT à envoyer
+    // "paymentSubmitted" : Mt Pelerin a reçu la transaction (confirmation de leur côté)
+    // Ref: https://developers.mtpelerin.com/integration-guides/events
     // -----------------------------------------------------------------------
     const handleWebViewMessage = useCallback(
         (event: WebViewMessageEvent) => {
             try {
                 const raw = event.nativeEvent.data;
                 const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-                console.log('[TransakOffRamp] Event:', parsed?.event_id);
+                console.log('[MtPelerin] Event:', parsed?.type, JSON.stringify(parsed?.data ?? {}).slice(0, 100));
 
-                if (
-                    parsed?.event_id === 'TRANSAK_ORDER_CREATED' ||
-                    parsed?.event_id === 'ORDER_CREATED'
-                ) {
-                    const order = parsed?.data;
-                    const depositAddress: string | undefined = order?.walletAddress;
-                    const cryptoAmount: number | undefined =
-                        order?.cryptoAmount ?? order?.crypto_amount;
+                if (parsed?.type === 'orderCreated' && parsed?.data?.type === 'sell') {
+                    const depositAddress: string | undefined = parsed.data.offRampAddress;
+                    const cryptoAmount: number | undefined = parsed.data.valueIn;
 
                     if (!depositAddress || !cryptoAmount) return;
 
                     Alert.alert(
                         'Virement en cours',
-                        'Votre retrait est en cours de traitement…',
+                        'Votre retrait SEPA (1-3 jours ouvrés) est en cours de traitement…',
                         [{ text: 'OK' }],
                         { cancelable: false },
                     );
@@ -264,12 +254,10 @@ export function TransakOffRamp({ visible, onClose, onSuccess, balanceEUR, balanc
         [sendUsdt],
     );
 
-    // -----------------------------------------------------------------------
-    // Reset à la fermeture
-    // -----------------------------------------------------------------------
     const handleClose = () => {
         if (txStatus === 'success') onSuccess?.();
-        setStep('confirm');
+        setStep('loading');
+        setWidgetUrl(null);
         setUsdtAmount(0);
         setTxStatus('idle');
         setTxHash(null);
@@ -277,57 +265,59 @@ export function TransakOffRamp({ visible, onClose, onSuccess, balanceEUR, balanc
         onClose();
     };
 
-    const transakUrl = buildTransakUrl(address, usdtAmount);
-
-    // -----------------------------------------------------------------------
-    // Render
-    // -----------------------------------------------------------------------
     return (
         <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
             <SafeAreaView style={styles.container}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Retrait vers ma banque</Text>
+                    <View>
+                        <Text style={styles.headerTitle}>Retrait vers ma banque</Text>
+                        <Text style={styles.headerSubtitle}>SEPA Standard · 1-3 jours ouvrés</Text>
+                    </View>
                     <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
                         <X size={18} color="#1a1a2e" />
                     </TouchableOpacity>
                 </View>
 
-                {/* ── Confirmation ────────────────────────────────────────── */}
+                {/* ── Chargement de l'URL (génération de la signature) ─────── */}
+                {step === 'loading' && (
+                    <View style={styles.centered}>
+                        <ActivityIndicator size="large" color="#1a1a2e" />
+                        <Text style={styles.loadingText}>Préparation du retrait…</Text>
+                    </View>
+                )}
+
+                {/* ── Aucun fonds / solde insuffisant ─────────────────────── */}
                 {step === 'confirm' && (
-                    <View style={styles.confirmScreen}>
+                    <View style={styles.centered}>
                         {balanceUSDT <= 0 ? (
-                            /* Aucun fonds */
                             <View style={styles.stateCard}>
                                 <Text style={styles.emptyEmoji}>💰</Text>
                                 <Text style={styles.stateTitle}>Aucun fonds disponible</Text>
                                 <Text style={styles.stateText}>
-                                    Vous n'avez pas encore de fonds à retirer.{'\n'}
-                                    Attendez qu'un envoi soit effectué en votre nom.
+                                    Vous n'avez pas encore de fonds à retirer.
                                 </Text>
                                 <TouchableOpacity onPress={handleClose} style={styles.secondaryBtn}>
                                     <Text style={styles.secondaryBtnText}>Retour à l'accueil</Text>
                                 </TouchableOpacity>
                             </View>
-                        ) : balanceEUR <= 0 ? (
-                            /* Solde trop faible (frais > montant) */
+                        ) : (
                             <View style={styles.stateCard}>
                                 <Text style={styles.emptyEmoji}>⚠️</Text>
                                 <Text style={styles.stateTitle}>Solde insuffisant</Text>
                                 <Text style={styles.stateText}>
-                                    Votre solde est actuellement trop faible pour couvrir les frais de virement.{'\n\n'}
-                                    Attendez de recevoir un montant suffisant avant de procéder au retrait.
+                                    Votre solde est trop faible pour couvrir les frais de virement.
                                 </Text>
                                 <TouchableOpacity onPress={handleClose} style={styles.secondaryBtn}>
                                     <Text style={styles.secondaryBtnText}>Retour à l'accueil</Text>
                                 </TouchableOpacity>
                             </View>
-                        ) : null}
+                        )}
                     </View>
                 )}
 
-                {/* ── Widget Transak ───────────────────────────────────────── */}
-                {step === 'widget' && (
+                {/* ── Widget Mt Pelerin ────────────────────────────────────── */}
+                {step === 'widget' && widgetUrl && (
                     <>
                         {txStatus !== 'idle' && (
                             <View style={styles.overlay}>
@@ -350,7 +340,7 @@ export function TransakOffRamp({ visible, onClose, onSuccess, balanceEUR, balanc
                         <WebView
                             key={address ?? 'no-wallet'}
                             ref={webViewRef}
-                            source={{ uri: transakUrl }}
+                            source={{ uri: widgetUrl }}
                             injectedJavaScript={INJECTED_JS}
                             onMessage={handleWebViewMessage}
                             javaScriptEnabled
@@ -361,7 +351,7 @@ export function TransakOffRamp({ visible, onClose, onSuccess, balanceEUR, balanc
                             renderLoading={() => (
                                 <View style={styles.loadingContainer}>
                                     <ActivityIndicator size="large" color="#1a1a2e" />
-                                    <Text style={styles.loadingSubText}>Chargement…</Text>
+                                    <Text style={styles.loadingText}>Chargement Mt Pelerin…</Text>
                                 </View>
                             )}
                         />
@@ -382,7 +372,7 @@ function SendingView() {
             <ActivityIndicator size="large" color="#1a1a2e" style={{ marginBottom: 20 }} />
             <Text style={styles.statusTitle}>Traitement en cours…</Text>
             <Text style={styles.statusSub}>
-                Votre retrait est en cours de traitement. Patientez quelques secondes.
+                Envoi des fonds à Mt Pelerin. Patientez quelques secondes.
             </Text>
         </View>
     );
@@ -401,10 +391,14 @@ function SuccessView({
         <View style={styles.statusContent}>
             <CheckCircle size={64} color="#059669" style={{ marginBottom: 16 }} />
             <Text style={styles.statusTitle}>Retrait initié !</Text>
+            <View style={styles.sepaNotice}>
+                <Clock size={14} color="#6b7280" />
+                <Text style={styles.sepaNoticeText}>Virement SEPA Standard · 1-3 jours ouvrés</Text>
+            </View>
             <Text style={styles.statusSub}>
                 {eurAmount > 0
-                    ? `${eurAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} € seront virés instantanément sur votre compte bancaire.`
-                    : 'Les fonds seront virés instantanément sur votre compte bancaire.'
+                    ? `${eurAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} € seront virés sur votre compte bancaire dans 1 à 3 jours ouvrés.`
+                    : 'Les fonds seront virés sur votre compte bancaire dans 1 à 3 jours ouvrés.'
                 }
             </Text>
             {txHash && (
@@ -450,26 +444,17 @@ const styles = StyleSheet.create({
         borderBottomColor: '#e5e7eb',
     },
     headerTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a2e' },
+    headerSubtitle: { fontSize: 11, color: '#6b7280', marginTop: 2 },
     closeBtn: {
         height: 32, width: 32, borderRadius: 16,
         backgroundColor: '#f3f4f6',
         alignItems: 'center', justifyContent: 'center',
     },
-    // Loading
-    centeredScreen: {
-        flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40,
-    },
-    loadingTitle: { fontSize: 17, fontWeight: '700', color: '#1a1a2e', marginBottom: 8 },
-    loadingSubText: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 20 },
-    loadingContainer: {
-        ...StyleSheet.absoluteFillObject,
-        alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff',
-    },
-    // Confirm
-    confirmScreen: {
+    centered: {
         flex: 1, alignItems: 'center', justifyContent: 'center',
         paddingHorizontal: 28, paddingBottom: 40,
     },
+    loadingText: { fontSize: 14, color: '#6b7280', marginTop: 16 },
     primaryBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
         backgroundColor: '#1a1a2e', borderRadius: 24,
@@ -483,7 +468,6 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     secondaryBtnText: { fontSize: 14, fontWeight: '600', color: '#1a1a2e' },
-    // State cards (empty / error)
     stateCard: { alignItems: 'center', paddingHorizontal: 16 },
     stateTitle: { fontSize: 20, fontWeight: '700', color: '#1a1a2e', marginBottom: 10 },
     stateText: {
@@ -491,7 +475,6 @@ const styles = StyleSheet.create({
         lineHeight: 22, marginBottom: 4,
     },
     emptyEmoji: { fontSize: 56, marginBottom: 16 },
-    // Widget
     webview: { flex: 1 },
     overlay: {
         ...StyleSheet.absoluteFillObject, zIndex: 10,
@@ -505,8 +488,19 @@ const styles = StyleSheet.create({
         textAlign: 'center', marginBottom: 12,
     },
     statusSub: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 20 },
+    sepaNotice: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        backgroundColor: '#f3f4f6', borderRadius: 20,
+        paddingHorizontal: 12, paddingVertical: 6,
+        marginBottom: 12,
+    },
+    sepaNoticeText: { fontSize: 12, color: '#6b7280' },
     txHash: {
         marginTop: 12, fontSize: 11, color: '#9ca3af',
         fontFamily: 'monospace', textAlign: 'center',
+    },
+    loadingContainer: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff',
     },
 });

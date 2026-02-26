@@ -88,13 +88,14 @@ export default function HistoriqueScreen() {
                                                     </Text>
                                                     <View className="mt-1 flex-row items-center gap-1">
                                                         <View className={`h-1.5 w-1.5 rounded-full ${tx.status === 'COMPLETED' ? 'bg-emerald-500' :
-                                                                tx.status === 'PENDING' ? 'bg-yellow-500' :
+                                                                tx.status === 'WAITING_USER_OFFRAMP' || tx.status === 'BRIDGE_PROCESSING' || tx.status === 'PAYIN_PENDING' ? 'bg-yellow-500' :
                                                                     tx.status === 'INITIATED' ? 'bg-blue-500' : 'bg-gray-400'
                                                             }`} />
                                                         <Text className="text-[10px] text-muted-foreground uppercase">
                                                             {tx.status === 'COMPLETED' ? 'Terminé' :
-                                                                tx.status === 'PENDING' ? 'En cours' :
-                                                                    tx.status === 'INITIATED' ? 'Initié' : tx.status}
+                                                                tx.status === 'WAITING_USER_OFFRAMP' ? 'À retirer' :
+                                                                    tx.status === 'BRIDGE_PROCESSING' || tx.status === 'PAYIN_PENDING' ? 'En cours' :
+                                                                        tx.status === 'INITIATED' ? 'Initié' : tx.status}
                                                         </Text>
                                                     </View>
                                                 </View>

@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import * as SecureStore from 'expo-secure-store';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import api from '../lib/api';
 import { TransferService } from '../services/transfers';
@@ -18,12 +19,13 @@ export interface ReceiverState {
     balanceEUR: number;   // EUR nets que Transak versera (calculé depuis le solde on-chain)
     balanceUSDT: number;  // Solde USDT réel sur Polygon — source de vérité
     recentTransactions: TransactionInfo[];
+    withdrawnTxIds: string[];  // IDs des transactions déjà retirées (persistés)
     isLoading: boolean;
 }
 
 interface ReceiverContextType {
     state: ReceiverState;
-    initiateWithdrawal: (amountEUR: number) => Promise<boolean>;
+    markWithdrawn: (txId: string) => Promise<void>;
     refreshBalance: () => Promise<void>;
 }
 
@@ -31,6 +33,7 @@ const defaultState: ReceiverState = {
     balanceEUR: 0.00,
     balanceUSDT: 0,
     recentTransactions: [],
+    withdrawnTxIds: [],
     isLoading: true
 };
 
@@ -89,7 +92,8 @@ export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 amountEUR: Number(tx.amountFiatOutExpected || tx.amountEUR || 0),
                 senderName: tx.sender?.prenom ? `${tx.sender.prenom} ${tx.sender.nom}` : "Utilisateur Wura",
                 date: new Date(tx.createdAt || tx.date || Date.now()),
-                status: tx.status
+                status: tx.status,
+                routingStrategy: tx.routingStrategy ?? 'TRANSAK',
             }));
         } catch { /* historique indisponible — le solde s'affiche quand même */ }
 
@@ -143,26 +147,31 @@ export const ReceiverProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, [user, address]);
 
 
-    const initiateWithdrawal = async (amount: number): Promise<boolean> => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                if (amount <= state.balanceEUR) {
-                    setState(prev => ({
-                        ...prev,
-                        balanceEUR: prev.balanceEUR - amount
-                    }));
-                    resolve(true);
-                } else {
-                    resolve(false);
-                }
-            }, 1500);
-        });
+    // Clé SecureStore propre à l'utilisateur
+    const withdrawKey = user ? `wura_withdrawn_${user.uid}` : null;
+
+    // Charger les IDs retirés depuis SecureStore au login
+    useEffect(() => {
+        if (!withdrawKey) return;
+        SecureStore.getItemAsync(withdrawKey).then(raw => {
+            const ids: string[] = raw ? JSON.parse(raw) : [];
+            setState(prev => ({ ...prev, withdrawnTxIds: ids }));
+        }).catch(() => {});
+    }, [withdrawKey]);
+
+    // Marquer une transaction comme retirée (persiste entre sessions)
+    const markWithdrawn = async (txId: string) => {
+        const next = [...new Set([...state.withdrawnTxIds, txId])];
+        setState(prev => ({ ...prev, withdrawnTxIds: next }));
+        if (withdrawKey) {
+            await SecureStore.setItemAsync(withdrawKey, JSON.stringify(next)).catch(() => {});
+        }
     };
 
     return (
         <ReceiverContext.Provider value={{
             state,
-            initiateWithdrawal,
+            markWithdrawn,
             refreshBalance
         }}>
             {children}

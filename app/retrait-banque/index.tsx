@@ -8,7 +8,7 @@ import { useReceiver } from "../../contexts/ReceiverContext";
 
 export default function RetraitBanqueScreen() {
     const router = useRouter();
-    const { state, initiateWithdrawal } = useReceiver();
+    const { state } = useReceiver();
     const [amount, setAmount] = useState<string>("");
     const [isLoading, setIsLoading] = useState(false);
 
@@ -19,18 +19,13 @@ export default function RetraitBanqueScreen() {
     const totalDeducted = numericAmount > 0 ? numericAmount + fees : 0;
     const isValid = numericAmount > 0 && totalDeducted <= balance;
 
+    // Ce screen est remplacé par les widgets Transak/Mt Pelerin dans l'accueil
     const handleWithdraw = async () => {
         if (!isValid) return;
         setIsLoading(true);
-        const success = await initiateWithdrawal(totalDeducted);
+        await new Promise(r => setTimeout(r, 300));
         setIsLoading(false);
-
-        if (success) {
-            router.push({
-                pathname: "/retrait-banque/succes",
-                params: { amount: numericAmount.toString() }
-            });
-        }
+        router.push('/accueil');
     };
 
     return (

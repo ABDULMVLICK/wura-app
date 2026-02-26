@@ -1,5 +1,7 @@
 export type TransactionStatus = 'INITIATED' | 'PAYIN_PENDING' | 'PAYIN_SUCCESS' | 'BRIDGE_PROCESSING' | 'BRIDGE_SUCCESS' | 'WAITING_USER_OFFRAMP' | 'OFFRAMP_PROCESSING' | 'COMPLETED' | 'PAYIN_FAILED' | 'BRIDGE_FAILED' | 'OFFRAMP_FAILED' | 'REFUNDED';
 
+export type RoutingStrategy = 'TRANSAK' | 'MT_PELERIN';
+
 export interface TransactionInfo {
     id: string;
     amountFCFA?: number;
@@ -12,6 +14,7 @@ export interface TransactionInfo {
     senderName?: string;
     kkiapayTransactionId?: string;
     blockchainTxHash?: string;
+    routingStrategy?: RoutingStrategy;  // TRANSAK (SEPA Instant) ou MT_PELERIN (SEPA Standard 1-3j)
 }
 
 export interface Recipient {
