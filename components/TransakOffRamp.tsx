@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import { AlertCircle, ArrowRight, CheckCircle, X } from 'lucide-react-native';
+import { AlertCircle, CheckCircle, X } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -154,9 +154,15 @@ export function TransakOffRamp({ visible, onClose, balanceEUR, balanceUSDT }: Tr
     useEffect(() => {
         if (visible) {
             setUsdtAmount(balanceUSDT);
-            setStep('confirm');
+            // Si le solde est suffisant, aller directement au widget Transak (source de vérité)
+            // L'écran de confirmation n'est utilisé que pour les erreurs (pas de fonds / solde insuffisant)
+            if (balanceUSDT > 0 && balanceEUR > 0) {
+                setStep('widget');
+            } else {
+                setStep('confirm');
+            }
         }
-    }, [visible, balanceUSDT]);
+    }, [visible, balanceUSDT, balanceEUR]);
 
     // -----------------------------------------------------------------------
     // Envoi automatique vers Transak (déclenché par ORDER_CREATED)
@@ -313,36 +319,7 @@ export function TransakOffRamp({ visible, onClose, balanceEUR, balanceUSDT }: Tr
                                     <Text style={styles.secondaryBtnText}>Retour à l'accueil</Text>
                                 </TouchableOpacity>
                             </View>
-                        ) : (
-                            /* Solde disponible */
-                            <>
-                                <View style={styles.balanceCard}>
-                                    <Text style={styles.balanceLabel}>Vous allez recevoir</Text>
-                                    <Text style={styles.balanceEur}>
-                                        {balanceEUR.toLocaleString('fr-FR', {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2,
-                                        })} €
-                                    </Text>
-                                    <View style={styles.badge}>
-                                        <Text style={styles.badgeText}>Virement SEPA Instant · quelques secondes</Text>
-                                    </View>
-                                </View>
-
-                                <Text style={styles.infoText}>
-                                    Ce montant sera viré directement sur votre compte bancaire.
-                                    Vous aurez juste besoin de renseigner votre IBAN.
-                                </Text>
-
-                                <TouchableOpacity
-                                    onPress={() => setStep('widget')}
-                                    style={styles.primaryBtn}
-                                >
-                                    <Text style={styles.primaryBtnText}>Retirer vers ma banque</Text>
-                                    <ArrowRight size={20} color="#ffffff" />
-                                </TouchableOpacity>
-                            </>
-                        )}
+                        ) : null}
                     </View>
                 )}
 
@@ -487,28 +464,6 @@ const styles = StyleSheet.create({
     confirmScreen: {
         flex: 1, alignItems: 'center', justifyContent: 'center',
         paddingHorizontal: 28, paddingBottom: 40,
-    },
-    balanceCard: {
-        width: '100%', backgroundColor: '#1a1a2e',
-        borderRadius: 24, padding: 32,
-        alignItems: 'center', marginBottom: 24,
-    },
-    balanceLabel: {
-        fontSize: 13, color: 'rgba(255,255,255,0.6)',
-        marginBottom: 8, fontWeight: '500',
-    },
-    balanceEur: {
-        fontSize: 48, fontWeight: '800',
-        color: '#ffffff', letterSpacing: -1, marginBottom: 14,
-    },
-    badge: {
-        backgroundColor: 'rgba(255,255,255,0.12)',
-        borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6,
-    },
-    badgeText: { fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
-    infoText: {
-        fontSize: 13, color: '#6b7280', textAlign: 'center',
-        lineHeight: 20, marginBottom: 28, paddingHorizontal: 8,
     },
     primaryBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
