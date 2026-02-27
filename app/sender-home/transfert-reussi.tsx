@@ -86,7 +86,7 @@ export default function TransfertReussiScreen() {
     // fallback sur le state React pour les navigations normales.
     const isNewBeneficiary = txData?.isNewBeneficiary === true || state.recipient?.isNew === true;
 
-    const claimLink = `https://wura.app/claim/${reference}`;
+    const claimLink = `https://panel-admin-wura.vercel.app/claim/${reference}`;
 
     const handleCopyLink = async () => {
         await Clipboard.setStringAsync(claimLink);
