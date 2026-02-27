@@ -394,7 +394,7 @@ export class AdminService {
 
     // ─── SUPPRESSION UTILISATEUR ─────────────────────────────────────────────────
 
-    async deleteUser(userId: string) {
+    async deleteUser(userId: string, adminName = 'Admin') {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
             include: {
