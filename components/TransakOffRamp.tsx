@@ -98,7 +98,7 @@ const INJECTED_JS = `
 
   // 2. Auto-sélection de l'option de conformité ("purpose of transaction")
   //    Transak affiche une étape avec des radio buttons avant l'IBAN.
-  //    On sélectionne automatiquement l'option "investment" et on valide.
+  //    On sélectionne automatiquement l'option "buying/selling crypto" et on valide.
   function tryAutoCompliance() {
     var inputs = document.querySelectorAll('input[type="radio"], input[type="checkbox"]');
     for (var i = 0; i < inputs.length; i++) {
@@ -108,7 +108,12 @@ const INJECTED_JS = `
                   || input.closest('label')
                   || input.parentElement;
       var text = (label ? label.innerText || label.textContent : '').toLowerCase();
-      if (text.indexOf('invest') !== -1) {
+      if (
+        text.indexOf('buying') !== -1 ||
+        text.indexOf('selling') !== -1 ||
+        text.indexOf('crypto') !== -1 ||
+        text.indexOf('invest') !== -1
+      ) {
         input.click();
         // Cliquer "Continue" / "Next" après un court délai
         setTimeout(function() {

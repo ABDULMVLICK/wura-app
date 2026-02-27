@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { TransactionStatus } from '@prisma/client';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Role, TransactionStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { PolygonService } from '../blockchain/polygon.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { DeliverySpeed, QuotationService } from '../quotation/quotation.service';
 
@@ -8,7 +9,8 @@ import { DeliverySpeed, QuotationService } from '../quotation/quotation.service'
 export class TransactionsService {
     constructor(
         private prisma: PrismaService,
-        private quotationService: QuotationService
+        private quotationService: QuotationService,
+        private polygonService: PolygonService,
     ) { }
 
     async createTransaction(senderUserId: string, data: { receiverWuraId: string, amountFiatIn: number, amountFiatOutExpected: number, deliverySpeed: string }) {
@@ -129,6 +131,58 @@ export class TransactionsService {
                 polygonTxHash,
             },
         });
+    }
+
+    async registerClaimWithWallet(
+        referenceId: string,
+        walletAddress: string,
+        email: string,
+        firstName: string,
+        lastName: string,
+    ) {
+        const tx = await this.getTransactionByReference(referenceId);
+
+        if (tx.status !== TransactionStatus.PAYIN_SUCCESS) {
+            throw new BadRequestException(`Transaction non éligible (statut: ${tx.status})`);
+        }
+
+        // Vérifier que le receiver actuel est provisoire
+        const provReceiver = await this.prisma.receiver.findUnique({
+            where: { id: tx.receiverId },
+            include: { user: true },
+        });
+        if (!provReceiver?.user?.firebaseUid?.startsWith('PROV-')) {
+            throw new BadRequestException('Ce transfert a déjà été réclamé.');
+        }
+
+        // Créer ou récupérer l'User + Receiver réel
+        const uid = `WEB3AUTH-${walletAddress.toLowerCase()}`;
+        const user = await this.prisma.user.upsert({
+            where: { firebaseUid: uid },
+            create: { firebaseUid: uid, role: Role.RECEIVER, email: email || null },
+            update: {},
+        });
+        const receiver = await this.prisma.receiver.upsert({
+            where: { userId: user.id },
+            create: {
+                userId: user.id,
+                wuraId: `WURA-${Date.now()}`,
+                firstName: firstName || null,
+                lastName: lastName || null,
+                web3AuthWalletAddress: walletAddress,
+            },
+            update: { web3AuthWalletAddress: walletAddress },
+        });
+
+        // Migrer la transaction vers le nouveau receiver
+        await this.prisma.transaction.update({
+            where: { id: tx.id },
+            data: { receiverId: receiver.id },
+        });
+
+        // Bridge USDT trésorerie → wallet (receiver a maintenant un wallet → bridge immédiat)
+        const result = await this.polygonService.bridgeUsdtToReceiver(tx.id);
+        return { success: true, walletAddress, txHash: (result as any)?.txHash ?? null };
     }
 
     async calculateTransactionMargin(referenceId: string) {

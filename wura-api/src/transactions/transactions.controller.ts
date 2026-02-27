@@ -114,4 +114,17 @@ export class PublicTransactionsController {
         await this.transactionsService.markOfframpStarted(tx.id, txHash);
         return { success: true, txHash };
     }
+
+    @Post('claim/:referenceId/register')
+    async registerClaim(
+        @Param('referenceId') referenceId: string,
+        @Body('walletAddress') walletAddress: string,
+        @Body('email') email: string,
+        @Body('firstName') firstName: string,
+        @Body('lastName') lastName: string,
+    ) {
+        return this.transactionsService.registerClaimWithWallet(
+            referenceId, walletAddress, email, firstName, lastName,
+        );
+    }
 }
