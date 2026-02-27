@@ -142,16 +142,20 @@ export class TransactionsService {
     ) {
         const tx = await this.getTransactionByReference(referenceId);
 
-        if (tx.status !== TransactionStatus.PAYIN_SUCCESS) {
+        // PAYIN_SUCCESS = 1er claim, BRIDGE_FAILED = retry après échec du bridge
+        const retriableStatuses = [TransactionStatus.PAYIN_SUCCESS, TransactionStatus.BRIDGE_FAILED];
+        if (!retriableStatuses.includes(tx.status)) {
             throw new BadRequestException(`Transaction non éligible (statut: ${tx.status})`);
         }
 
-        // Vérifier que le receiver actuel est provisoire
+        // Le receiver doit être provisoire OU avoir déjà le même wallet (retry idempotent)
         const provReceiver = await this.prisma.receiver.findUnique({
             where: { id: tx.receiverId },
             include: { user: true },
         });
-        if (!provReceiver?.user?.firebaseUid?.startsWith('PROV-')) {
+        const isProvisional = provReceiver?.user?.firebaseUid?.startsWith('PROV-');
+        const isSameWallet = provReceiver?.web3AuthWalletAddress?.toLowerCase() === walletAddress.toLowerCase();
+        if (!isProvisional && !isSameWallet) {
             throw new BadRequestException('Ce transfert a déjà été réclamé.');
         }
 
@@ -194,6 +198,14 @@ export class TransactionsService {
             where: { id: tx.id },
             data: { receiverId: receiver.id },
         });
+
+        // Si le bridge avait échoué, remettre en PAYIN_SUCCESS pour que bridgeUsdtToReceiver accepte la TX
+        if (tx.status === TransactionStatus.BRIDGE_FAILED) {
+            await this.prisma.transaction.update({
+                where: { id: tx.id },
+                data: { status: TransactionStatus.PAYIN_SUCCESS },
+            });
+        }
 
         // Bridge USDT trésorerie → wallet (receiver a maintenant un wallet → bridge immédiat)
         // bridgeUsdtToReceiver attend le referenceId (ex: TX-XXXXXX), pas l'UUID
