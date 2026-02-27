@@ -22,10 +22,10 @@ export interface Recipient {
     wuraId?: string;
     nom: string;
     prenom: string;
-    iban: string;
-    bic: string;
-    banque: string;
-    pays: string;
+    iban?: string;
+    bic?: string;
+    banque?: string;
+    pays?: string;
     isNew?: boolean;
 }
 
