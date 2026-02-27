@@ -20,13 +20,10 @@ export class QuotationController {
             throw new BadRequestException('Amount must be a positive number');
         }
 
-        // Montant minimum Wura : 33 000 FCFA — appliqué uniquement en production
-        const isProduction = process.env.NODE_ENV === 'production';
-        const MIN_XOF = 33_000;
-        const amountInXof = currency === 'XOF' ? amount : amount * 655.96;
-        if (isProduction && amountInXof < MIN_XOF) {
-            throw new BadRequestException(`Montant minimum : ${MIN_XOF.toLocaleString('fr-FR')} FCFA`);
-        }
+        // TODO: Réactiver avant mise en production
+        // const MIN_XOF = 33_000;
+        // const amountInXof = currency === 'XOF' ? amount : amount * 655.96;
+        // if (amountInXof < MIN_XOF) throw new BadRequestException(`Montant minimum : ${MIN_XOF.toLocaleString('fr-FR')} FCFA`);
 
         if (currency !== 'XOF' && currency !== 'EUR') {
             throw new BadRequestException('Currency must be XOF or EUR');
