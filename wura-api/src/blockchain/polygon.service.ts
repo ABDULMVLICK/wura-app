@@ -79,6 +79,10 @@ export class PolygonService {
             // Étape 3 (CRITIQUE) : Conversion du Decimal Prisma en BigInt pour Ethers v6 (6 décimales pour USDT)
             const usdtContractAddress = this.configService.get<string>('USDT_CONTRACT_ADDRESS') || '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
             const usdtDecimalValue = tx.amountUsdtBridged.toString(); // On convertit l'objet JS Prisma.Decimal en String
+            const usdtNumeric = parseFloat(usdtDecimalValue);
+            if (isNaN(usdtNumeric) || usdtNumeric <= 0) {
+                throw new Error(`Montant USDT invalide en base (${usdtDecimalValue}). Recréer la transaction.`);
+            }
             const amountInWei = ethers.parseUnits(usdtDecimalValue, 6);
 
             // Étape 4 : Pre-flight check de la balance USDT et MATIC de la trésorerie
