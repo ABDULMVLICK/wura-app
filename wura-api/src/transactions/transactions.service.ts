@@ -79,8 +79,19 @@ export class TransactionsService {
         const receiver = await this.prisma.receiver.findUnique({ where: { userId: receiverUserId } });
         if (!receiver) return [];
 
+        // Exclure les transactions non payées : le receiver ne voit que les transactions
+        // dont le paiement sender a été confirmé (PAYIN_SUCCESS ou plus avancé)
         return this.prisma.transaction.findMany({
-            where: { receiverId: receiver.id },
+            where: {
+                receiverId: receiver.id,
+                status: {
+                    notIn: [
+                        TransactionStatus.INITIATED,
+                        TransactionStatus.PAYIN_PENDING,
+                        TransactionStatus.PAYIN_FAILED,
+                    ],
+                },
+            },
             include: { sender: true },
             orderBy: { createdAt: 'desc' }
         });
