@@ -115,6 +115,19 @@ export class PublicTransactionsController {
         return { success: true, txHash };
     }
 
+    // Nouveau flux : le receiver a envoyé lui-même les USDT depuis son wallet → on met à jour le statut
+    @Post('claim/:referenceId/complete-offramp')
+    async completeClaimOfframp(
+        @Param('referenceId') referenceId: string,
+        @Body('polygonTxHash') polygonTxHash: string,
+    ) {
+        const tx = await this.transactionsService.getTransactionByReference(referenceId);
+        if (tx.status !== TransactionStatus.WAITING_USER_OFFRAMP) {
+            throw new BadRequestException(`Transaction non éligible pour complétion (statut: ${tx.status})`);
+        }
+        return this.transactionsService.markOfframpStarted(tx.id, polygonTxHash || 'claim_web');
+    }
+
     @Post('claim/:referenceId/register')
     async registerClaim(
         @Param('referenceId') referenceId: string,
