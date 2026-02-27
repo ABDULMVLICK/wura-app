@@ -86,8 +86,8 @@ export default function ConfirmationBeneficiaryScreen() {
                                     </>
                                 ) : (
                                     <>
-                                        <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">Notification envoyée au bénéficiaire</Text>
-                                        <Text className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Il sera notifié pour retirer ses fonds depuis son application Wura</Text>
+                                        <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">Retrait via l'application Wura</Text>
+                                        <Text className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Le bénéficiaire pourra retirer ses fonds depuis son application Wura</Text>
                                     </>
                                 )}
                             </View>
