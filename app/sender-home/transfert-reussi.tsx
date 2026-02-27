@@ -79,7 +79,9 @@ export default function TransfertReussiScreen() {
         router.push("/sender-home");
     };
 
-    const isNewBeneficiary = state.recipient?.isNew === true;
+    // isNewBeneficiary : priorité au flag backend (receiver UID PROV-*),
+    // fallback sur le state React pour les navigations normales.
+    const isNewBeneficiary = txData?.isNewBeneficiary === true || state.recipient?.isNew === true;
 
     const claimLink = `https://wura.app/claim/${reference}`;
 

@@ -89,10 +89,16 @@ export class TransactionsService {
     async getTransactionById(id: string) {
         const tx = await this.prisma.transaction.findUnique({
             where: { id },
-            include: { sender: true, receiver: true }
+            include: {
+                sender: true,
+                receiver: {
+                    include: { user: { select: { firebaseUid: true } } }
+                }
+            }
         });
         if (!tx) throw new NotFoundException('Transaction non trouvée');
-        return tx;
+        const isNewBeneficiary = tx.receiver?.user?.firebaseUid?.startsWith('PROV-') ?? false;
+        return { ...tx, isNewBeneficiary };
     }
 
     async getTransactionByReference(referenceId: string) {
