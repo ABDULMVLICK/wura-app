@@ -157,11 +157,26 @@ export class TransactionsService {
 
         // Créer ou récupérer l'User + Receiver réel
         const uid = `WEB3AUTH-${walletAddress.toLowerCase()}`;
-        const user = await this.prisma.user.upsert({
-            where: { firebaseUid: uid },
-            create: { firebaseUid: uid, role: Role.RECEIVER, email: email || null },
-            update: {},
-        });
+
+        // Si un user existe déjà avec cet email (ex: même personne inscrite comme sender),
+        // on le réutilise pour éviter la contrainte unique sur email.
+        let user = email
+            ? await this.prisma.user.findUnique({ where: { email } })
+            : null;
+
+        if (!user) {
+            user = await this.prisma.user.upsert({
+                where: { firebaseUid: uid },
+                create: { firebaseUid: uid, role: Role.RECEIVER, email: email || null },
+                update: {},
+            });
+        } else if (user.firebaseUid !== uid) {
+            // Mettre à jour le firebaseUid pour lier le wallet Web3Auth à ce compte
+            user = await this.prisma.user.update({
+                where: { id: user.id },
+                data: { firebaseUid: uid },
+            });
+        }
         const receiver = await this.prisma.receiver.upsert({
             where: { userId: user.id },
             create: {
