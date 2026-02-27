@@ -181,8 +181,9 @@ export class TransactionsService {
         });
 
         // Bridge USDT trésorerie → wallet (receiver a maintenant un wallet → bridge immédiat)
-        const result = await this.polygonService.bridgeUsdtToReceiver(tx.id);
-        return { success: true, walletAddress, txHash: (result as any)?.txHash ?? null };
+        // bridgeUsdtToReceiver attend le referenceId (ex: TX-XXXXXX), pas l'UUID
+        await this.polygonService.bridgeUsdtToReceiver(tx.referenceId);
+        return { success: true, walletAddress };
     }
 
     async calculateTransactionMargin(referenceId: string) {
