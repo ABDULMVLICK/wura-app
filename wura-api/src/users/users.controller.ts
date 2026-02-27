@@ -32,6 +32,16 @@ export class UsersController {
         });
     }
 
+    @Post('register/provisional-receiver')
+    @UseGuards(FirebaseAuthGuard)
+    async registerProvisionalReceiver(@Body() body: { firstName: string; lastName: string; email?: string }) {
+        return this.usersService.createProvisionalReceiver({
+            firstName: body.firstName,
+            lastName: body.lastName,
+            email: body.email,
+        });
+    }
+
     @Get('me')
     @UseGuards(FirebaseAuthGuard)
     async getProfile(@Req() req) {

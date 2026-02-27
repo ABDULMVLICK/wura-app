@@ -77,16 +77,23 @@ export class QuotationService {
         url.searchParams.append('fiatAmount', targetEur.toString()); // EUR net voulu
         url.searchParams.append('partnerApiKey', apiKey);
 
-        try {
+        const tryFetch = async (pm: string): Promise<number | null> => {
+            url.searchParams.set('paymentMethod', pm);
             const response = await fetch(url.toString(), { method: 'GET' });
             if (!response.ok) {
-                this.logger.error(`[Transak] SELL API ${response.status}: ${await response.text()}`);
-                throw new Error('Transak SELL API error');
+                const body = await response.text();
+                this.logger.warn(`[Transak] SELL API ${response.status} (${pm}): ${body}`);
+                return null;
             }
             const { response: r } = await response.json();
-            // cryptoAmount = USDT que le receiver doit envoyer à Transak pour recevoir targetEur net
-            this.logger.log(`[Transak] SELL quote: pour recevoir ${targetEur}€ → envoyer ${r.cryptoAmount} USDT (frais inclus)`);
+            this.logger.log(`[Transak] SELL quote (${pm}): pour recevoir ${targetEur}€ → envoyer ${r.cryptoAmount} USDT`);
             return parseFloat(r.cryptoAmount);
+        };
+
+        try {
+            const result = await tryFetch(paymentMethod) ?? await tryFetch('sepa_bank_transfer');
+            if (result !== null) return result;
+            throw new Error('Tous les payment methods ont échoué');
         } catch (err: any) {
             this.logger.error(`[Transak] SELL fallback Mock: ${err.message}`);
             return parseFloat((targetEur * 1.03).toFixed(6));
@@ -123,19 +130,34 @@ export class QuotationService {
         url.searchParams.append('cryptoCurrency', 'USDT');
         url.searchParams.append('isBuyOrSell', 'SELL');
         url.searchParams.append('network', 'polygon');
-        url.searchParams.append('paymentMethod', 'sepa_bank_transfer_instant');
         url.searchParams.append('cryptoAmount', cryptoAmount.toString());
         url.searchParams.append('partnerApiKey', apiKey);
 
-        try {
-            const response = await fetch(url.toString(), { method: 'GET' });
-            if (!response.ok) {
-                const body = await response.text();
-                this.logger.error(`[Transak] Off-ramp API ${response.status}: ${body}`);
-                throw new Error('Transak off-ramp API error');
-            }
+        // Essayer d'abord sepa_bank_transfer_instant (prod), puis fallback sepa_bank_transfer (staging)
+        const paymentMethods = ['sepa_bank_transfer_instant', 'sepa_bank_transfer'];
+        let rawResponse: any = null;
 
-            const { response: r } = await response.json();
+        for (const pm of paymentMethods) {
+            url.searchParams.set('paymentMethod', pm);
+            try {
+                const res = await fetch(url.toString(), { method: 'GET' });
+                if (res.ok) {
+                    const json = await res.json();
+                    rawResponse = json.response;
+                    this.logger.log(`[Transak] Off-ramp quote via ${pm}`);
+                    break;
+                }
+                const body = await res.text();
+                this.logger.warn(`[Transak] Off-ramp ${pm} ${res.status}: ${body}`);
+            } catch (e: any) {
+                this.logger.warn(`[Transak] Off-ramp ${pm} network error: ${e.message}`);
+            }
+        }
+
+        try {
+            if (!rawResponse) throw new Error('Aucun payment method disponible');
+
+            const r = rawResponse;
 
             // Extraire les frais depuis feeBreakdown
             const feeBreakdown: Array<{ id: string; value: number }> = r.feeBreakdown ?? [];

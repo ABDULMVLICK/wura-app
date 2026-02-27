@@ -34,16 +34,16 @@ export const TransferService = {
     },
 
     /**
-     * Créer un nouveau bénéficiaire en base de données
+     * Créer un bénéficiaire provisoire en base de données (depuis le flux sender).
+     * N'utilise pas le Firebase UID du sender — crée un receiver avec un UID système.
      */
-    createRecipient: async (data: { nom: string, prenom: string, iban: string, email?: string }) => {
+    createRecipient: async (data: { nom: string; prenom: string; email?: string; telephone?: string }) => {
         const payload = {
             firstName: data.prenom,
             lastName: data.nom,
-            iban: data.iban,
-            email: data.email || `${data.prenom.toLowerCase()}.${data.nom.toLowerCase()}@wura.app`
+            email: data.email || undefined,
         };
-        const response = await api.post('/users/register/receiver', payload);
+        const response = await api.post('/users/register/provisional-receiver', payload);
         return response.data;
     },
 

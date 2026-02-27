@@ -101,6 +101,44 @@ describe('Wura API End-to-End Tests', () => {
     });
   });
 
+  describe('Users Module — Provisional Receiver (flux sender)', () => {
+    it('/users/register/provisional-receiver (POST) - crée un receiver provisoire depuis le sender', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/users/register/provisional-receiver')
+        .set('Authorization', 'Bearer sender_mock_token')
+        .send({
+          firstName: 'Marie',
+          lastName: 'Dubois',
+          email: 'marie.dubois@example.com',
+        })
+        .expect(201);
+
+      expect(response.body.role).toBe('RECEIVER');
+      expect(response.body.receiver).toBeDefined();
+      expect(response.body.receiver.wuraId).toMatch(/^WURA-/);
+      // UID provisoire généré par le système (≠ sender UID)
+      expect(response.body.firebaseUid).toMatch(/^PROV-/);
+      expect(response.body.firebaseUid).not.toBe(mockSenderUid);
+    });
+
+    it('/users/register/provisional-receiver (POST) - email auto-généré si absent', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/users/register/provisional-receiver')
+        .set('Authorization', 'Bearer sender_mock_token')
+        .send({ firstName: 'Paul', lastName: 'Martin' })
+        .expect(201);
+
+      expect(response.body.email).toMatch(/@wura\.provisional$/);
+    });
+
+    it('/users/register/provisional-receiver (POST) - refusé sans authentification', async () => {
+      await request(app.getHttpServer())
+        .post('/users/register/provisional-receiver')
+        .send({ firstName: 'Test', lastName: 'Unauthorized' })
+        .expect(403);
+    });
+  });
+
   describe('Transactions Module', () => {
     let receiverWuraId: string;
 

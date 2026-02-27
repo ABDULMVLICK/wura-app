@@ -243,7 +243,8 @@ export default function TransfertReussiScreen() {
                         </View>
 
                         {/* Share Shareable Link Section (Primary Action) */}
-                        {(status === "COMPLETED" || status === "PAYIN_SUCCESS" || status === "WAITING_USER_OFFRAMP" || status === "BRIDGE_SUCCESS") && isNewBeneficiary && (
+                        {/* Affiché dès que le referenceId est connu (1er poll), quel que soit le statut */}
+                        {isNewBeneficiary && txData?.referenceId && !["PAYIN_FAILED", "BRIDGE_FAILED", "OFFRAMP_FAILED", "REFUNDED"].includes(status) && (
                             <View className="w-full mt-6 bg-[#FDFBF7] dark:bg-[#2A2216] rounded-2xl p-5 border border-[#F59E0B]/30 shadow-sm relative overflow-hidden">
                                 <View className="absolute top-0 right-0 w-32 h-32 bg-[#F59E0B]/5 rounded-bl-full" />
 

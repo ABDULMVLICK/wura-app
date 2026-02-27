@@ -22,10 +22,13 @@ export interface Recipient {
     wuraId?: string;
     nom: string;
     prenom: string;
+    email?: string;
+    telephone?: string;
+    pays?: string;
+    lien?: 'famille' | 'ami' | 'professionnel' | 'autre';
     iban?: string;
     bic?: string;
     banque?: string;
-    pays?: string;
     isNew?: boolean;
 }
 

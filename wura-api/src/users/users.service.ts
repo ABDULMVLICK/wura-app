@@ -57,6 +57,33 @@ export class UsersService {
         }
     }
 
+    /**
+     * Crée un receiver "provisoire" pour un bénéficiaire sans compte Wura.
+     * Utilisé par les senders lors de l'ajout d'un bénéficiaire.
+     * Le receiver obtient un UID système unique (pas celui du sender).
+     */
+    async createProvisionalReceiver(data: { firstName: string; lastName: string; email?: string }) {
+        const provisionalUid = `PROV-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        const email = data.email || `${provisionalUid}@wura.provisional`;
+        const wuraId = 'WURA-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+
+        try {
+            return await this.prisma.user.create({
+                data: {
+                    firebaseUid: provisionalUid,
+                    email,
+                    role: Role.RECEIVER,
+                    receiver: {
+                        create: { wuraId },
+                    },
+                },
+                include: { receiver: true },
+            });
+        } catch (e) {
+            throw new ConflictException('Impossible de créer le bénéficiaire');
+        }
+    }
+
     async findByFirebaseUid(uid: string) {
         return this.prisma.user.findUnique({
             where: { firebaseUid: uid },
