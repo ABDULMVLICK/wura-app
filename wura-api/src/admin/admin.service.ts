@@ -198,7 +198,7 @@ export class AdminService {
         };
     }
 
-    async retryBridge(transactionId: string) {
+    async retryBridge(transactionId: string, adminName = 'Admin') {
         const tx = await this.prisma.transaction.findUnique({
             where: { id: transactionId },
         });
@@ -218,6 +218,7 @@ export class AdminService {
             this.logger.error(`[Admin] Retry bridge failed for ${tx.referenceId}: ${err.message}`);
         });
 
+        await this.logAction(adminName, 'RETRY_BRIDGE', `ref=${tx.referenceId}`);
         return { status: 'retry_initiated', referenceId: tx.referenceId };
     }
 
@@ -297,37 +298,48 @@ export class AdminService {
         });
     }
 
-    async updateRate(pair: string, data: { baseRate?: number; markupPercent?: number }) {
+    async updateRate(pair: string, data: { baseRate?: number; markupPercent?: number }, adminName = 'Admin') {
         const rate = await this.prisma.exchangeRate.findUnique({ where: { pair } });
         if (!rate) throw new NotFoundException(`Taux introuvable pour la paire ${pair}`);
 
-        return this.prisma.exchangeRate.update({
+        const result = await this.prisma.exchangeRate.update({
             where: { pair },
             data: {
                 ...(data.baseRate !== undefined && { baseRate: data.baseRate }),
                 ...(data.markupPercent !== undefined && { markupPercent: data.markupPercent }),
             },
         });
+
+        const details = [
+            data.baseRate !== undefined ? `baseRate=${data.baseRate}` : null,
+            data.markupPercent !== undefined ? `markup=${data.markupPercent}%` : null,
+        ].filter(Boolean).join(', ');
+        await this.logAction(adminName, 'UPDATE_RATE', `pair=${pair} ${details}`);
+        return result;
     }
 
     // ─── FORCE STATUT ────────────────────────────────────────────────────────────
 
-    async forceTransactionStatus(transactionId: string, status: TransactionStatus, reason?: string) {
+    async forceTransactionStatus(transactionId: string, status: TransactionStatus, reason?: string, adminName = 'Admin') {
         const tx = await this.prisma.transaction.findUnique({ where: { id: transactionId } });
         if (!tx) throw new NotFoundException('Transaction introuvable');
 
-        return this.prisma.transaction.update({
+        const result = await this.prisma.transaction.update({
             where: { id: transactionId },
             data: {
                 status,
                 ...(reason && { failureReason: reason }),
             },
         });
+
+        await this.logAction(adminName, 'FORCE_STATUS',
+            `ref=${tx.referenceId} ${tx.status}→${status}${reason ? ` (${reason})` : ''}`);
+        return result;
     }
 
     // ─── PUSH NOTIFICATIONS ──────────────────────────────────────────────────────
 
-    async sendPushToUser(userId: string, title: string, body: string) {
+    async sendPushToUser(userId: string, title: string, body: string, adminName = 'Admin') {
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user) throw new NotFoundException('Utilisateur introuvable');
         if (!user.pushToken) throw new BadRequestException('Cet utilisateur n\'a pas de push token enregistré');
@@ -340,10 +352,11 @@ export class AdminService {
             data: { type: 'ADMIN_MESSAGE' },
         });
 
+        await this.logAction(adminName, 'PUSH_USER', `userId=${userId} title="${title}"`);
         return { status: 'sent', userId, email: user.email };
     }
 
-    async broadcastPush(title: string, body: string, role?: 'SENDER' | 'RECEIVER') {
+    async broadcastPush(title: string, body: string, role?: 'SENDER' | 'RECEIVER', adminName = 'Admin') {
         const where = {
             pushToken: { not: null },
             ...(role && { role }),
@@ -370,6 +383,8 @@ export class AdminService {
             }
         }
 
+        await this.logAction(adminName, 'BROADCAST_PUSH',
+            `title="${title}" role=${role ?? 'ALL'} envoyé=${successCount}/${users.length}`);
         return {
             status: 'broadcast_done',
             total: users.length,
@@ -423,6 +438,28 @@ export class AdminService {
         }
         await this.prisma.user.delete({ where: { id: userId } });
 
+        await this.logAction(adminName, 'DELETE_USER', `userId=${userId} email=${user.email ?? 'N/A'}`);
         return { status: 'deleted', userId, email: user.email };
+    }
+
+    // ─── JOURNAL D'AUDIT ─────────────────────────────────────────────────────────
+
+    async logAction(adminName: string, action: string, details?: string) {
+        await this.prisma.adminLog.create({
+            data: { adminName, action, details },
+        });
+    }
+
+    async getAuditLogs(page = 1, limit = 50) {
+        const skip = (page - 1) * limit;
+        const [logs, total] = await this.prisma.$transaction([
+            this.prisma.adminLog.findMany({
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            this.prisma.adminLog.count(),
+        ]);
+        return { data: logs, meta: { total, page, limit, pages: Math.ceil(total / limit) } };
     }
 }

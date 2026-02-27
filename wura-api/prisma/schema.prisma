@@ -140,3 +140,14 @@ model Transaction {
 
   @@map("transactions")
 }
+
+// Journal des actions admin (audit trail)
+model AdminLog {
+  id        String   @id @default(uuid())
+  adminName String   @map("admin_name")
+  action    String
+  details   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("admin_logs")
+}
