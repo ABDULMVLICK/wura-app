@@ -143,7 +143,7 @@ export class TransactionsService {
         const tx = await this.getTransactionByReference(referenceId);
 
         // PAYIN_SUCCESS = 1er claim, BRIDGE_FAILED = retry après échec du bridge
-        const retriableStatuses = [TransactionStatus.PAYIN_SUCCESS, TransactionStatus.BRIDGE_FAILED];
+        const retriableStatuses: TransactionStatus[] = [TransactionStatus.PAYIN_SUCCESS, TransactionStatus.BRIDGE_FAILED];
         if (!retriableStatuses.includes(tx.status)) {
             throw new BadRequestException(`Transaction non éligible (statut: ${tx.status})`);
         }
