@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { BlockchainModule } from '../blockchain/blockchain.module';
 import { KkiapayModule } from '../kkiapay/kkiapay.module';
 import { QuotationModule } from '../quotation/quotation.module';
 import { UsersModule } from '../users/users.module';
@@ -6,7 +7,7 @@ import { PublicTransactionsController, TransactionsController } from './transact
 import { TransactionsService } from './transactions.service';
 
 @Module({
-  imports: [UsersModule, QuotationModule, KkiapayModule],
+  imports: [UsersModule, QuotationModule, KkiapayModule, BlockchainModule],
   controllers: [TransactionsController, PublicTransactionsController],
   providers: [TransactionsService],
 })

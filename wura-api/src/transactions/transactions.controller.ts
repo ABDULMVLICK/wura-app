@@ -1,5 +1,7 @@
-import { Body, Controller, Get, NotFoundException, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, NotFoundException, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { TransactionStatus } from '@prisma/client';
 import { FirebaseAuthGuard } from '../auth/firebase-auth/firebase-auth.guard';
+import { PolygonService } from '../blockchain/polygon.service';
 import { KkiapayService } from '../kkiapay/kkiapay.service';
 import { UsersService } from '../users/users.service';
 import { TransactionsService } from './transactions.service';
@@ -68,20 +70,48 @@ export class TransactionsController {
 // Controller public séparé pour requêter les infos basiques avant Onboarding
 @Controller('public-transactions')
 export class PublicTransactionsController {
-    constructor(private readonly transactionsService: TransactionsService) { }
+    constructor(
+        private readonly transactionsService: TransactionsService,
+        private readonly polygonService: PolygonService,
+    ) { }
 
     @Get('claim/:referenceId')
     async getClaimableTransaction(@Param('referenceId') referenceId: string) {
         const tx = await this.transactionsService.getTransactionByReference(referenceId);
 
-        // Security: Return only safe fields needed for the UI
         return {
+            txId: tx.id,
             referenceId: tx.referenceId,
             status: tx.status,
             amountFiatOutExpected: tx.amountFiatOutExpected,
+            amountUsdtBridged: tx.amountUsdtBridged.toNumber(),
             deliverySpeed: tx.deliverySpeed,
             senderFirstName: tx.sender?.firstName || "Quelqu'un",
             createdAt: tx.createdAt
         };
+    }
+
+    @Post('claim/:referenceId/offramp')
+    async claimOfframp(
+        @Param('referenceId') referenceId: string,
+        @Body() body: { transakDepositAddress: string; cryptoAmount: number },
+    ) {
+        const tx = await this.transactionsService.getTransactionByReference(referenceId);
+
+        if (tx.status !== TransactionStatus.PAYIN_SUCCESS) {
+            throw new BadRequestException(`Transaction déjà traitée (statut: ${tx.status})`);
+        }
+
+        // Anti-double-spend : lock immédiat avant l'envoi blockchain
+        await this.transactionsService.markOfframpStarted(tx.id, 'pending_claim');
+
+        const txHash = await this.polygonService.sendUsdtFromTreasury(
+            body.transakDepositAddress,
+            body.cryptoAmount,
+        );
+
+        // Sauvegarde du hash réel
+        await this.transactionsService.markOfframpStarted(tx.id, txHash);
+        return { success: true, txHash };
     }
 }

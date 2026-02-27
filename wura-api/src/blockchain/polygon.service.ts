@@ -129,6 +129,28 @@ export class PolygonService {
         }
     }
 
+    getTreasuryAddress(): string {
+        return this.wallet?.address ?? '';
+    }
+
+    /**
+     * Envoie des USDT depuis la trésorerie Wura vers une adresse externe (ex: dépôt Transak).
+     * Utilisé pour le flux claim link (receiver sans wallet).
+     */
+    async sendUsdtFromTreasury(toAddress: string, amountUsdt: number): Promise<string> {
+        if (!this.wallet) {
+            throw new Error('Trésorerie non configurée. Clé privée manquante.');
+        }
+        const usdtContractAddress = this.configService.get<string>('USDT_CONTRACT_ADDRESS') || '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
+        const usdtContract = new ethers.Contract(usdtContractAddress, this.erc20Abi, this.wallet);
+        const amountInWei = ethers.parseUnits(amountUsdt.toFixed(6), 6);
+        const tx = await usdtContract.transfer(toAddress, amountInWei);
+        this.logger.log(`📡 Claim USDT TX diffusée: ${tx.hash}`);
+        await tx.wait();
+        this.logger.log(`✅ Claim USDT TX confirmée: ${tx.hash}`);
+        return tx.hash;
+    }
+
     async executePayout(
         receiverAddress: string,
         amountUsdt: number

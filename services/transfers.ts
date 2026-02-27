@@ -79,6 +79,18 @@ export const TransferService = {
     },
 
     /**
+     * Déclenche l'envoi USDT depuis la trésorerie Wura vers l'adresse de dépôt Transak.
+     * Utilisé dans le flux claim link (receiver sans wallet). Sans Auth.
+     */
+    claimOfframp: async (referenceId: string, transakDepositAddress: string, cryptoAmount: number) => {
+        const response = await api.post(`/public-transactions/claim/${referenceId}/offramp`, {
+            transakDepositAddress,
+            cryptoAmount,
+        });
+        return response.data;
+    },
+
+    /**
      * Demander un remboursement pour une transaction échouée
      */
     requestRefund: async (transactionId: string) => {
