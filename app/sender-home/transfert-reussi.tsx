@@ -20,14 +20,17 @@ export default function TransfertReussiScreen() {
 
     const amount = txData?.amountFiatIn ? txData.amountFiatIn : getTotalXOF() || "0";
 
-    // Resolve handle safely: Try DB wuraId first, then State wuraId, then State context names
-    const recipientHandle = txData?.receiver?.wuraId
-        ? `@${txData.receiver.wuraId}`
-        : state.recipient?.wuraId
-            ? `@${state.recipient.wuraId}`
-            : state.recipient?.prenom
-                ? `@${state.recipient.prenom}${state.recipient.nom?.charAt(0) || ''}`
-                : "@...";
+    // Priorité : vrai nom stocké en DB (receiver.firstName/lastName),
+    // sinon nom du state React, sinon wuraId en fallback
+    const recipientHandle = (txData?.receiver?.firstName || txData?.receiver?.lastName)
+        ? `${txData.receiver.firstName ?? ''} ${txData.receiver.lastName ?? ''}`.trim()
+        : (state.recipient?.prenom || state.recipient?.nom)
+            ? `${state.recipient.prenom ?? ''} ${state.recipient.nom ?? ''}`.trim()
+            : state.recipient?.wuraId
+                ? `@${state.recipient.wuraId}`
+                : txData?.receiver?.wuraId
+                    ? `@${txData.receiver.wuraId}`
+                    : "@...";
 
     const [destinationCountry, setDestinationCountry] = useState<string>(
         txData?.receiver?.country || state.recipient?.pays || "le pays du bénéficiaire"

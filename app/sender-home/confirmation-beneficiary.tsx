@@ -72,15 +72,24 @@ export default function ConfirmationBeneficiaryScreen() {
                             </View>
                         </View>
 
-                        {/* Row: Claim link info */}
+                        {/* Row: Retrait info */}
                         <View className="flex-row items-center px-5 py-4 bg-white dark:bg-[#221b10] border-t border-gray-100 dark:border-[#3A3124]">
                             <View className="w-10 h-10 rounded-xl bg-[#F59E0B]/10 items-center justify-center mr-4">
                                 <Link size={20} color="#F59E0B" />
                             </View>
                             <View className="flex-1">
                                 <Text className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Retrait</Text>
-                                <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">Lien de retrait généré après paiement</Text>
-                                <Text className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Votre bénéficiaire entrera son IBAN depuis le lien</Text>
+                                {recipient.isNew ? (
+                                    <>
+                                        <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">Lien de retrait généré après paiement</Text>
+                                        <Text className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Votre bénéficiaire entrera son IBAN depuis le lien</Text>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">Notification envoyée au bénéficiaire</Text>
+                                        <Text className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Il sera notifié pour retirer ses fonds depuis son application Wura</Text>
+                                    </>
+                                )}
                             </View>
                         </View>
                     </View>

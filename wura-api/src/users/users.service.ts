@@ -74,7 +74,11 @@ export class UsersService {
                     email,
                     role: Role.RECEIVER,
                     receiver: {
-                        create: { wuraId },
+                        create: {
+                            wuraId,
+                            firstName: data.firstName,
+                            lastName: data.lastName,
+                        },
                     },
                 },
                 include: { receiver: true },

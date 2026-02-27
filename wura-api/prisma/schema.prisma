@@ -66,6 +66,8 @@ model Receiver {
   id                    String   @id @default(uuid())
   userId                String   @unique @map("user_id")
   wuraId                String   @unique @map("wura_id") // Unique ID pour le routage
+  firstName             String?  @map("first_name")
+  lastName              String?  @map("last_name")
   ibanEncrypted         String?  @map("iban_encrypted")
   bic                   String?
   web3AuthWalletAddress String?  @map("web3auth_wallet_address") // Adresse Polygon
