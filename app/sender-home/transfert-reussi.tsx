@@ -202,8 +202,40 @@ export default function TransfertReussiScreen() {
                             )}
                         </View>
 
+                        {/* Share Shareable Link Section (Primary Action) */}
+                        {/* Affiché dès que le referenceId est connu (1er poll), quel que soit le statut */}
+                        {isNewBeneficiary && txData?.referenceId && !["PAYIN_FAILED", "BRIDGE_FAILED", "OFFRAMP_FAILED", "REFUNDED"].includes(status) && (
+                            <View className="w-full mt-6 bg-[#FDFBF7] dark:bg-[#2A2216] rounded-2xl p-5 border border-[#F59E0B]/30 shadow-sm relative overflow-hidden">
+                                <View className="absolute top-0 right-0 w-32 h-32 bg-[#F59E0B]/5 rounded-bl-full" />
+
+                                <Text className="text-gray-900 dark:text-white font-bold text-lg mb-1">
+                                    Partagez le lien de retrait ! 🔗
+                                </Text>
+                                <Text className="text-gray-500 dark:text-gray-400 text-sm mb-4 leading-relaxed">
+                                    Envoyez ce lien unique au bénéficiaire. Il pourra récupérer les fonds directement sur son IBAN en un clic.
+                                </Text>
+
+                                <View className="flex-row items-center bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl p-3 mb-4">
+                                    <Text className="flex-1 text-gray-700 dark:text-gray-300 font-mono text-xs" numberOfLines={1} ellipsizeMode="tail">
+                                        {claimLink}
+                                    </Text>
+                                    <TouchableOpacity onPress={handleCopyLink} className="p-2 ml-2 bg-gray-100 dark:bg-white/10 rounded-lg">
+                                        <Copy size={16} className="text-gray-600 dark:text-gray-300" />
+                                    </TouchableOpacity>
+                                </View>
+
+                                <TouchableOpacity
+                                    onPress={handleShareLink}
+                                    className="w-full bg-[#128C7E] py-3.5 rounded-xl shadow-lg shadow-[#128C7E]/20 flex-row items-center justify-center gap-2 active:scale-[0.98]"
+                                >
+                                    <Share2 size={18} color="white" />
+                                    <Text className="text-white font-bold text-base">Partager sur WhatsApp</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
                         {/* Details Card */}
-                        <View className="w-full mt-8 bg-white dark:bg-[#2A2216] rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
+                        <View className="w-full mt-6 bg-white dark:bg-[#2A2216] rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
                             <View className="gap-5">
                                 {/* Reference */}
                                 <View className="flex-row justify-between items-center">
@@ -243,38 +275,6 @@ export default function TransfertReussiScreen() {
                                 </View>
                             </View>
                         </View>
-
-                        {/* Share Shareable Link Section (Primary Action) */}
-                        {/* Affiché dès que le referenceId est connu (1er poll), quel que soit le statut */}
-                        {isNewBeneficiary && txData?.referenceId && !["PAYIN_FAILED", "BRIDGE_FAILED", "OFFRAMP_FAILED", "REFUNDED"].includes(status) && (
-                            <View className="w-full mt-6 bg-[#FDFBF7] dark:bg-[#2A2216] rounded-2xl p-5 border border-[#F59E0B]/30 shadow-sm relative overflow-hidden">
-                                <View className="absolute top-0 right-0 w-32 h-32 bg-[#F59E0B]/5 rounded-bl-full" />
-
-                                <Text className="text-gray-900 dark:text-white font-bold text-lg mb-1">
-                                    Partagez le lien de retrait ! 🔗
-                                </Text>
-                                <Text className="text-gray-500 dark:text-gray-400 text-sm mb-4 leading-relaxed">
-                                    Envoyez ce lien unique au bénéficiaire. Il pourra récupérer les fonds directement sur son IBAN en un clic.
-                                </Text>
-
-                                <View className="flex-row items-center bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl p-3 mb-4">
-                                    <Text className="flex-1 text-gray-700 dark:text-gray-300 font-mono text-xs" numberOfLines={1} ellipsizeMode="tail">
-                                        {claimLink}
-                                    </Text>
-                                    <TouchableOpacity onPress={handleCopyLink} className="p-2 ml-2 bg-gray-100 dark:bg-white/10 rounded-lg">
-                                        <Copy size={16} className="text-gray-600 dark:text-gray-300" />
-                                    </TouchableOpacity>
-                                </View>
-
-                                <TouchableOpacity
-                                    onPress={handleShareLink}
-                                    className="w-full bg-[#128C7E] py-3.5 rounded-xl shadow-lg shadow-[#128C7E]/20 flex-row items-center justify-center gap-2 active:scale-[0.98]"
-                                >
-                                    <Share2 size={18} color="white" />
-                                    <Text className="text-white font-bold text-base">Partager sur WhatsApp</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
 
                         {/* Download Receipt */}
                         <TouchableOpacity
