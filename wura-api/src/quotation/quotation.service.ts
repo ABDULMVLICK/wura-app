@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export enum DeliverySpeed {
@@ -15,10 +15,11 @@ interface QuoteRequest {
 export interface QuoteResult {
     baseAmountCfa: number;
     commercialAmountCfa: number;
+    fixedFeesCfa: number;      // = frais fixes Wura (palier petit montant < 30k CFA)
     kkiapayFeeCfa: number;
     partnerFeesCfa: number;    // = frais Transak réels (converties en CFA)
     wuraFeesCfa: number;       // = marge nette Wura après déduction frais Transak
-    totalToPayCfa: number;
+    totalToPayCfa: number;     // = commercialAmountCfa + fixedFeesCfa
     montant_usdt_a_envoyer_polygon: number;
     montant_euro_recu_par_jean: number;
     taux_wura_cfa: number;
@@ -38,17 +39,38 @@ export interface OffRampQuoteResult {
 export class QuotationService {
     private readonly logger = new Logger(QuotationService.name);
 
-    // Taux de facturation Wura (FCFA / 1€)
-    private readonly TAUX_WURA_INSTANT = 719.9;
-    private readonly TAUX_WURA_STANDARD = 689.9;
-
     // Taux officiel fixe EUR/XOF
     private readonly TAUX_OFFICIEL = 655.96;
 
-    // Frais Kkiapay Mobile Money (2%)
-    private readonly KKIAPAY_FEE_PERCENTAGE = 0.02;
+    // Frais Kkiapay Mobile Money (1.5% — à la charge du sender, transparent)
+    private readonly KKIAPAY_FEE_PERCENTAGE = 0.015;
+
+    // Plafond KYC par transaction
+    private readonly MAX_AMOUNT_CFA = 300_000;
 
     constructor(private readonly configService: ConfigService) { }
+
+    // -----------------------------------------------------------------------
+    // Tarification par paliers — INSTANT et STANDARD
+    // Palier 1 : < 30 000 CFA  → taux élevé + frais fixes 2 500 CFA (protège contre les 3€ Transak)
+    // Palier 2 : 30k – 150k   → taux standard, rentabilité saine
+    // Palier 3 : 150k – 300k  → taux réduit, très compétitif sur les gros montants
+    // -----------------------------------------------------------------------
+    private getTierConfig(baseAmountCfa: number, speed: DeliverySpeed): { taux: number; fixedFeesCfa: number } {
+        if (baseAmountCfa > this.MAX_AMOUNT_CFA) {
+            throw new BadRequestException('Montant maximum autorisé : 300 000 FCFA (limite de conformité KYC).');
+        }
+        if (speed === DeliverySpeed.INSTANT) {
+            if (baseAmountCfa < 30_000) return { taux: 721, fixedFeesCfa: 2_500 };
+            if (baseAmountCfa <= 150_000) return { taux: 721, fixedFeesCfa: 0 };
+            return { taux: 710, fixedFeesCfa: 0 };
+        } else {
+            // STANDARD — légèrement moins cher car délai 1-3 jours
+            if (baseAmountCfa < 30_000) return { taux: 718, fixedFeesCfa: 2_500 };
+            if (baseAmountCfa <= 150_000) return { taux: 718, fixedFeesCfa: 0 };
+            return { taux: 707, fixedFeesCfa: 0 };
+        }
+    }
 
     // -----------------------------------------------------------------------
     // Transak SELL (direction correcte) : combien de USDT envoyer au receiver
@@ -248,11 +270,6 @@ export class QuotationService {
     // partnerFeesCfa = vrais frais Transak off-ramp (plus de mock 30/70)
     // -----------------------------------------------------------------------
     async getQuote(request: QuoteRequest): Promise<QuoteResult> {
-        const tauxWura =
-            request.speed === DeliverySpeed.INSTANT
-                ? this.TAUX_WURA_INSTANT
-                : this.TAUX_WURA_STANDARD;
-
         // 1. Montant cible en EUR
         let amountEUR_cible: number;
         let baseAmountCfa: number;
@@ -265,11 +282,14 @@ export class QuotationService {
             baseAmountCfa = amountEUR_cible * this.TAUX_OFFICIEL;
         }
 
-        // 2. Montant facturé au taux Wura
+        // 2. Tarification par paliers (inclut validation plafond 300k)
+        const { taux: tauxWura, fixedFeesCfa } = this.getTierConfig(baseAmountCfa, request.speed);
+
+        // 3. Montant facturé au taux Wura
         const commercialAmountCfa = amountEUR_cible * tauxWura;
 
-        // 3. Frais Kkiapay Mobile Money
-        const kkiapayFeeCfa = commercialAmountCfa * this.KKIAPAY_FEE_PERCENTAGE;
+        // 4. Frais Kkiapay Mobile Money (1.5% sur le total — à la charge du sender)
+        const kkiapayFeeCfa = (commercialAmountCfa + fixedFeesCfa) * this.KKIAPAY_FEE_PERCENTAGE;
 
         // 4. Obtenir le montant USDT à bridger
         // Direction SELL : "combien de USDT envoyer pour que receiver reçoive amountEUR_cible net ?"
@@ -333,15 +353,16 @@ export class QuotationService {
 
         // montantUsdt est final ici (potentiellement ajusté dans le bloc INSTANT ci-dessus)
         const montant_usdt_a_envoyer_polygon = Number(montantUsdt.toFixed(6));
-        const totalToPayCfa = commercialAmountCfa;
+        const totalToPayCfa = commercialAmountCfa + fixedFeesCfa;
 
         this.logger.log(
-            `[Quote] ${Math.round(baseAmountCfa)} CFA → cible ${amountEUR_cible.toFixed(2)} EUR → réel ${montant_euro_recu_par_jean} EUR | USDT: ${montant_usdt_a_envoyer_polygon} | partnerFees: ${partnerFeesCfa} CFA | wuraFees: ${wuraFeesCfa} CFA`
+            `[Quote] ${Math.round(baseAmountCfa)} CFA → cible ${amountEUR_cible.toFixed(2)} EUR → réel ${montant_euro_recu_par_jean} EUR | USDT: ${montant_usdt_a_envoyer_polygon} | fixedFees: ${fixedFeesCfa} CFA | partnerFees: ${partnerFeesCfa} CFA | wuraFees: ${wuraFeesCfa} CFA`
         );
 
         return {
             baseAmountCfa: Math.round(baseAmountCfa),
             commercialAmountCfa: Math.round(commercialAmountCfa),
+            fixedFeesCfa,
             kkiapayFeeCfa: Math.round(kkiapayFeeCfa),
             partnerFeesCfa,
             wuraFeesCfa,

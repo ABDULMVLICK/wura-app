@@ -38,14 +38,6 @@ export class TransactionsService {
             speed: speedEnum
         });
 
-        // Calcul Wura Fee (Profit brut sur le taux de change).
-        // (Taux vendu au client - Taux réel estimé) * Montant EUR
-        // Mock actuel du coût USDT : 615 CFA/USDT (Binance P2P). 
-        // Wura le vend à 720 CFA (Instant) ou 690 CFA (Standard).
-        const actualUsdtCostRate = 615;
-        const coutDeRevientAchatUsdt = quote.montant_usdt_a_envoyer_polygon * actualUsdtCostRate;
-        const wuraFee = data.amountFiatIn - coutDeRevientAchatUsdt;
-
         return this.prisma.transaction.create({
             data: {
                 referenceId,
@@ -59,9 +51,7 @@ export class TransactionsService {
                 amountFiatOutExpected: quote.montant_euro_recu_par_jean,
                 // Comptabilité
                 clientExchangeRate: quote.taux_wura_cfa,
-                actualUsdtCostRate,
                 kkiapayFeeCfa: quote.kkiapayFeeCfa,
-                wuraFee: wuraFee > 0 ? wuraFee : 0,
             }
         });
     }
@@ -213,26 +203,4 @@ export class TransactionsService {
         return { success: true, walletAddress };
     }
 
-    async calculateTransactionMargin(referenceId: string) {
-        const tx = await this.prisma.transaction.findUnique({ where: { referenceId } });
-        if (!tx) throw new NotFoundException('Transaction non trouvée');
-
-        // Conversion des Decimal Prisma vers des nombres TS pour les calculs internes
-        const amountUsdtBridged = tx.amountUsdtBridged.toNumber();
-        const actualUsdtCostRate = tx.actualUsdtCostRate.toNumber();
-        const kkiapayFeeCfa = tx.kkiapayFeeCfa.toNumber();
-        const amountFiatIn = tx.amountFiatIn.toNumber();
-
-        // Bénéfice Net (CFA): Chiffre d'Affaires Brut - ((USDT * Taux Achat) + Frais Kkiapay)
-        const coutDeRevient = (amountUsdtBridged * actualUsdtCostRate) + kkiapayFeeCfa;
-        const profit = amountFiatIn - coutDeRevient;
-
-        return {
-            referenceId: tx.referenceId,
-            chiffreAffaire: amountFiatIn,
-            coutUsdt: amountUsdtBridged * actualUsdtCostRate,
-            fraisKkiapay: kkiapayFeeCfa,
-            profitNetCfa: profit
-        };
-    }
 }
