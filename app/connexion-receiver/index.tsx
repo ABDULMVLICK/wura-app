@@ -1,7 +1,6 @@
 import { signInWithCustomToken } from "@react-native-firebase/auth";
 import { Link, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
-import { useColorScheme } from "nativewind";
 import { useState } from "react";
 import { ActivityIndicator, Alert, Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,8 +11,6 @@ import { auth } from "../../lib/firebase";
 
 export default function ReceiverLoginScreen() {
     const router = useRouter();
-    const { colorScheme } = useColorScheme();
-    const isDark = colorScheme === "dark";
     const [loading, setLoading] = useState(false);
 
     const { loginWithGoogle } = useWeb3Auth();
@@ -78,7 +75,7 @@ export default function ReceiverLoginScreen() {
                     {/* Logo */}
                     <View className="items-center gap-1">
                         <Image
-                            source={isDark ? require("../../assets/images/wuraa-removebg-logoVersionDark.png") : require("../../assets/images/wuralogo-removebg-preview.png")}
+                            source={require("../../assets/images/wuralogo-removebg-preview.png")}
                             style={{ width: 280, height: 80 }}
                             resizeMode="contain"
                         />

@@ -31,30 +31,31 @@ export default function RetraitBanqueScreen() {
     return (
         <SafeAreaView className="flex-1 bg-background">
             <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                <View className="flex-1 px-6 pt-12 pb-8">
+                <View className="flex-1 px-7 pt-12 pb-8">
                     {/* Header */}
-                    <View className="relative mb-10 flex-row items-center justify-center">
+                    <View className="relative mb-12 flex-row items-center justify-center">
                         <TouchableOpacity
                             onPress={() => router.back()}
-                            className="absolute left-0 h-9 w-9 items-center justify-center"
+                            className="absolute left-0 h-11 w-11 items-center justify-center rounded-2xl bg-gray-50"
+                            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 }}
                         >
                             <ChevronLeft size={24} className="text-foreground" color="#1a1a2e" />
                         </TouchableOpacity>
-                        <Text className="text-lg font-bold text-foreground">Retrait vers la banque</Text>
+                        <Text className="text-xl font-bold text-foreground">Retrait vers la banque</Text>
                     </View>
 
                     {/* Amount Section */}
                     <View className="mb-10 flex-col items-center">
                         <Text className="mb-4 text-sm text-muted-foreground">Combien souhaitez-vous retirer ?</Text>
                         <View className="flex-row items-center justify-center gap-2">
-                            <Text className="text-4xl font-bold text-primary">€</Text>
+                            <Text className="text-5xl font-bold text-primary">€</Text>
                             <TextInput
                                 value={amount}
                                 onChangeText={setAmount}
                                 keyboardType="numeric"
                                 placeholder="0.00"
-                                placeholderTextColor="#cbd5e1"
-                                className="text-6xl font-bold text-primary p-0 m-0"
+                                placeholderTextColor="#d6d3d1"
+                                className="text-7xl font-extrabold text-primary p-0 m-0 tracking-tighter"
                             />
                         </View>
 
@@ -68,7 +69,8 @@ export default function RetraitBanqueScreen() {
                     </View>
 
                     {/* Bank Account Selector Card */}
-                    <View className="mb-6 rounded-3xl border border-border bg-card p-6 shadow-sm">
+                    <View className="mb-7 rounded-[28px] border border-border bg-card p-7"
+                        style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 3 }}>
                         <Text className="mb-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                             Vers le compte
                         </Text>
@@ -87,7 +89,8 @@ export default function RetraitBanqueScreen() {
                     </View>
 
                     {/* Summary Card */}
-                    <View className="mb-8 rounded-3xl border border-border bg-card p-6 shadow-sm">
+                    <View className="mb-8 rounded-[28px] border border-border bg-card p-7"
+                        style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 3 }}>
                         <View className="mb-4 flex-row items-center justify-between">
                             <Text className="text-sm text-muted-foreground">Montant du retrait</Text>
                             <Text className="font-bold text-foreground">{Number(numericAmount || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €</Text>
@@ -118,15 +121,16 @@ export default function RetraitBanqueScreen() {
                         onPress={handleWithdraw}
                         disabled={!isValid || isLoading}
                         className={clsx(
-                            "mb-6 flex-row w-full items-center justify-center gap-2 rounded-full py-4 transition-transform shadow-lg",
-                            isValid ? "bg-primary shadow-primary/20 active:scale-95" : "bg-gray-300 dark:bg-gray-700 opacity-70"
+                            "mb-6 flex-row w-full items-center justify-center gap-2 rounded-full py-5 transition-transform",
+                            isValid ? "bg-primary active:scale-95" : "bg-gray-300 opacity-70"
                         )}
+                        style={isValid ? { shadowColor: '#064E3B', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 6 } : {}}
                     >
                         {isLoading ? (
                             <ActivityIndicator color="white" />
                         ) : (
                             <>
-                                <Text className="text-base font-bold text-primary-foreground text-white">
+                                <Text className="text-lg font-bold text-primary-foreground text-white">
                                     Confirmer le retrait
                                 </Text>
                                 <ArrowRight size={20} color="white" />

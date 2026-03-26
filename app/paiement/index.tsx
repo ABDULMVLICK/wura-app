@@ -1,9 +1,9 @@
-import { clsx } from "clsx";
 import { useRouter } from "expo-router";
 import { ArrowRight, ChevronLeft, ShieldCheck } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "../../components/AnimatedPressable";
 import { useTransfer } from "../../contexts/TransferContext";
 import { saveSecureData } from "../../lib/storage";
 
@@ -176,76 +176,90 @@ export default function PaiementScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
-            <View className="flex-1 flex-col">
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#14533d' }}>
+            <View style={{ flex: 1 }}>
                 {/* Header */}
-                <View className="relative flex-row items-center justify-center px-5 pt-4 pb-4">
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, position: 'relative' }}>
                     <TouchableOpacity
                         onPress={() => router.back()}
-                        className="absolute left-5 flex h-9 w-9 items-center justify-center"
+                        style={{ position: 'absolute', left: 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}
                     >
-                        <ChevronLeft size={24} className="text-foreground" color="#1a1a2e" />
+                        <ChevronLeft size={22} color="#ffffff" />
                     </TouchableOpacity>
-                    <Text className="text-base font-semibold text-foreground">Paiement</Text>
+                    <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 17, color: '#ffffff' }}>Paiement</Text>
                 </View>
 
-                <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+                <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
                     {/* Title */}
-                    <View className="flex-col gap-2 px-6 pt-4 pb-6">
-                        <Text className="text-2xl font-bold text-foreground">
-                            Choisir le mode de paiement
+                    <View style={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 20, gap: 6 }}>
+                        <Text style={{ fontFamily: 'Outfit_900Black', fontSize: 26, color: '#F59E0B' }}>
+                            Mode de paiement
                         </Text>
-                        <Text className="text-sm text-muted-foreground leading-relaxed">
+                        <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 20 }}>
                             Sélectionnez le compte à débiter pour votre transaction.
                         </Text>
                     </View>
 
-                    {/* Payment methods */}
-                    <View className="flex-col gap-3 px-5">
+                    {/* Payment methods — white cards */}
+                    <View style={{ gap: 10, paddingHorizontal: 20 }}>
                         {PAYMENT_METHODS.map((method) => {
                             const isSelected = selected === method.id;
+                            const bgColors: Record<string, string> = {
+                                mtn: '#ffcc00', moov: '#5b86e5', orange: '#ff6600',
+                                airtel: '#ed1c24', wave: '#1dc4f0',
+                            };
+                            const textColors: Record<string, string> = {
+                                mtn: '#1a1a1a', moov: '#ffffff', orange: '#ffffff',
+                                airtel: '#ffffff', wave: '#ffffff',
+                            };
                             return (
                                 <TouchableOpacity
                                     key={method.id}
                                     onPress={() => setSelected(method.id)}
-                                    className={clsx(
-                                        "flex-row items-center gap-4 rounded-2xl border-2 bg-card p-4 transition-all",
-                                        isSelected
-                                            ? "border-accent" // shadow simplified via border for now
-                                            : "border-transparent"
-                                    )}
-                                    style={isSelected ? { shadowColor: '#f59e0b', shadowOpacity: 0.15, shadowRadius: 1, elevation: 1 } : {}}
+                                    activeOpacity={0.7}
+                                    style={{
+                                        flexDirection: 'row', alignItems: 'center', gap: 14,
+                                        backgroundColor: '#ffffff', borderRadius: 20,
+                                        padding: 16, borderWidth: 2,
+                                        borderColor: isSelected ? '#F59E0B' : 'transparent',
+                                        shadowColor: isSelected ? '#F59E0B' : '#000',
+                                        shadowOffset: { width: 0, height: isSelected ? 4 : 2 },
+                                        shadowOpacity: isSelected ? 0.2 : 0.06,
+                                        shadowRadius: isSelected ? 16 : 8,
+                                        elevation: isSelected ? 6 : 2,
+                                    }}
                                 >
                                     {/* Icon badge */}
-                                    <View
-                                        className={clsx(
-                                            "flex h-14 w-14 shrink-0 items-center justify-center rounded-xl",
-                                            method.colors.bg
-                                        )}
-                                    >
-                                        <Text className={clsx("text-xs font-bold", method.colors.text)}>
+                                    <View style={{
+                                        width: 48, height: 48, borderRadius: 14,
+                                        backgroundColor: bgColors[method.id] || '#e5e7eb',
+                                        alignItems: 'center', justifyContent: 'center',
+                                    }}>
+                                        <Text style={{
+                                            fontFamily: 'Outfit_700Bold', fontSize: 11,
+                                            color: textColors[method.id] || '#111',
+                                        }}>
                                             {method.shortName}
                                         </Text>
                                     </View>
 
                                     {/* Label */}
-                                    <View className="flex-1 flex-col items-start">
-                                        <Text className="text-base font-semibold text-foreground">
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ fontFamily: 'Outfit_600SemiBold', fontSize: 15, color: '#1a1a2e' }}>
                                             {method.label}
                                         </Text>
                                     </View>
 
                                     {/* Radio */}
-                                    <View
-                                        className={clsx(
-                                            "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2",
-                                            isSelected
-                                                ? "border-accent bg-accent"
-                                                : "border-muted-foreground bg-transparent" // border-muted-foreground/30 approx
-                                        )}
-                                    >
+                                    <View style={{
+                                        width: 24, height: 24, borderRadius: 12,
+                                        borderWidth: 2,
+                                        borderColor: isSelected ? '#F59E0B' : '#d1d5db',
+                                        backgroundColor: isSelected ? '#F59E0B' : 'transparent',
+                                        alignItems: 'center', justifyContent: 'center',
+                                    }}>
                                         {isSelected && (
-                                            <View className="h-2.5 w-2.5 rounded-full bg-card" />
+                                            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ffffff' }} />
                                         )}
                                     </View>
                                 </TouchableOpacity>
@@ -254,35 +268,45 @@ export default function PaiementScreen() {
                     </View>
 
                     {/* Security notice */}
-                    <View className="flex-row items-center justify-center gap-2 px-5 pt-6">
-                        <ShieldCheck size={16} className="text-muted-foreground" color="#6b7280" />
-                        <Text className="text-xs text-muted-foreground">
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 24 }}>
+                        <ShieldCheck size={14} color="rgba(255,255,255,0.4)" />
+                        <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
                             Paiement 100% sécurisé par Wura
                         </Text>
                     </View>
                 </ScrollView>
 
                 {/* Footer total + CTA */}
-                <View className="mt-auto flex-col gap-4 px-5 pb-8 pt-4 border-t border-border/10 bg-background">
-                    {/* Total */}
-                    <View className="flex-row items-center justify-between">
-                        <Text className="text-base text-muted-foreground">Total à payer</Text>
-                        <Text className="text-2xl font-bold text-foreground">
+                <View style={{
+                    marginTop: 'auto', paddingHorizontal: 20, paddingBottom: 24, paddingTop: 16,
+                    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)',
+                    backgroundColor: '#14533d', gap: 14,
+                }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>Total à payer</Text>
+                        <Text style={{ fontFamily: 'Outfit_900Black', fontSize: 24, color: '#ffffff' }}>
                             {formatAmount(amount)} FCFA
                         </Text>
                     </View>
 
-                    <TouchableOpacity
+                    <AnimatedPressable
                         onPress={handlePayment}
                         disabled={loading}
-                        className="w-full bg-[#064E3B] py-4 rounded-2xl shadow-lg shadow-emerald-900/10 flex-row items-center justify-center gap-2 active:scale-[0.98]"
-                        style={loading ? { opacity: 0.7 } : {}}
+                        style={{
+                            width: '100%', backgroundColor: '#064E3B', paddingVertical: 18,
+                            borderRadius: 999, alignItems: 'center', justifyContent: 'center',
+                            opacity: loading ? 0.7 : 1,
+                            shadowColor: '#00F5A0', shadowOffset: { width: 0, height: 6 },
+                            shadowOpacity: loading ? 0 : 0.3, shadowRadius: 20, elevation: loading ? 0 : 8,
+                        }}
                     >
-                        <Text className="text-base font-semibold text-white">
-                            {loading ? "Création en cours..." : "Confirmer et Payer"}
-                        </Text>
-                        {!loading && <ArrowRight size={20} color="white" />}
-                    </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                            <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 17, color: '#ffffff' }}>
+                                {loading ? "Création en cours..." : "Confirmer et Payer"}
+                            </Text>
+                            {!loading && <ArrowRight size={20} color="white" />}
+                        </View>
+                    </AnimatedPressable>
                 </View>
             </View>
         </SafeAreaView>

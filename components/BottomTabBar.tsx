@@ -1,55 +1,24 @@
-import { View, Text, TouchableOpacity } from "react-native";
 import { Link, usePathname } from "expo-router";
-import { Clock, User } from "lucide-react-native";
-import Svg, { Path } from "react-native-svg";
-import { clsx } from "clsx";
-
-function SendIcon({ active, color }: { active: boolean; color: string }) {
-    return (
-        <View
-            className={clsx(
-                "flex h-10 w-10 items-center justify-center rounded-xl",
-                active ? "bg-primary/10" : ""
-            )}
-        >
-            <Svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <Path
-                    d="M22 2L11 13"
-                    stroke={color}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                />
-                <Path
-                    d="M22 2L15 22L11 13L2 9L22 2Z"
-                    stroke={color}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill={active ? color : "none"}
-                    fillOpacity={active ? 0.15 : 0}
-                />
-            </Svg>
-        </View>
-    );
-}
+import { Clock, Home, User } from "lucide-react-native";
+import { Text, View } from "react-native";
+import { AnimatedPressable } from "./AnimatedPressable";
 
 const tabs = [
     {
-        label: "Envoyer",
+        label: "Home",
         href: "/accueil",
-        matchPaths: ["/accueil", "/confirmation"],
-        icon: "send" as const,
+        matchPaths: ["/accueil"],
+        icon: "home" as const,
     },
     {
         label: "Historique",
-        href: "/historique", // This route doesn't exist yet but keeping for consistency
+        href: "/historique",
         matchPaths: ["/historique"],
         icon: "history" as const,
     },
     {
         label: "Profil",
-        href: "/profil", // This route doesn't exist yet
+        href: "/profil",
         matchPaths: ["/profil"],
         icon: "profile" as const,
     },
@@ -59,41 +28,89 @@ export function BottomTabBar() {
     const pathname = usePathname();
 
     return (
-        <View className="border-t border-border bg-card pb-6 pt-2">
-            <View className="flex-row items-center justify-around">
-                {tabs.map((tab) => {
-                    const isActive = tab.matchPaths.some((p) => pathname.startsWith(p));
-                    const color = isActive ? "#0f3d2e" : "#9ca3af"; // primary vs muted-foreground
+        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingBottom: 28, paddingHorizontal: 24 }}>
+            {/* Liquid glass pill */}
+            <View style={{
+                borderRadius: 32,
+                overflow: 'hidden',
+                // Shadow multicouche pour profondeur
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.22,
+                shadowRadius: 24,
+                elevation: 16,
+            }}>
+                {/* Couche de fond semi-transparente — verre dépoli blanc */}
+                <View style={{
+                    backgroundColor: 'rgba(10,36,24,0.55)',
+                    borderRadius: 32,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.18)',
+                }}>
+                    {/* Reflet spéculaire haut — ligne lumineuse */}
+                    <View style={{
+                        position: 'absolute', top: 0, left: 16, right: 16, height: 1,
+                        backgroundColor: 'rgba(255,255,255,0.28)',
+                        borderRadius: 1,
+                    }} />
 
-                    return (
-                        <Link key={tab.label} href={tab.href as any} asChild>
-                            <TouchableOpacity
-                                className="items-center gap-0.5 px-4 py-1"
-                            >
-                                {tab.icon === "send" && <SendIcon active={isActive} color={color} />}
-                                {tab.icon === "history" && (
-                                    <View className="flex h-10 w-10 items-center justify-center">
-                                        <Clock size={24} color={color} />
-                                    </View>
-                                )}
-                                {tab.icon === "profile" && (
-                                    <View className="flex h-10 w-10 items-center justify-center">
-                                        <User size={24} color={color} />
-                                    </View>
-                                )}
-                                <Text
-                                    className={clsx(
-                                        "text-xs font-medium",
-                                        isActive ? "text-primary" : "text-muted-foreground"
-                                    )}
-                                >
-                                    {tab.label}
-                                </Text>
-                            </TouchableOpacity>
-                        </Link>
-                    );
-                })}
+                    {/* Lueur ambrée diffuse — identité Wura */}
+                    <View style={{
+                        position: 'absolute', bottom: -20, left: '30%', right: '30%',
+                        height: 40, borderRadius: 20,
+                        backgroundColor: 'rgba(245,158,11,0.10)',
+                    }} />
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingVertical: 10, paddingHorizontal: 8 }}>
+                        {tabs.map((tab) => {
+                            const isActive = tab.matchPaths.some((p) => pathname.startsWith(p));
+                            const iconColor = isActive ? "#F59E0B" : "rgba(255,255,255,0.45)";
+
+                            return (
+                                <Link key={tab.label} href={tab.href as any} asChild>
+                                    <AnimatedPressable
+                                        style={{ alignItems: 'center', paddingHorizontal: 20, paddingVertical: 6 }}
+                                        scaleValue={0.9}
+                                    >
+                                        {/* Halo actif */}
+                                        {isActive && (
+                                            <View style={{
+                                                position: 'absolute', top: 2, width: 44, height: 44,
+                                                borderRadius: 22,
+                                                backgroundColor: 'rgba(245,158,11,0.15)',
+                                            }} />
+                                        )}
+                                        {tab.icon === "home" && (
+                                            <View style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+                                                <Home size={26} color={iconColor} />
+                                            </View>
+                                        )}
+                                        {tab.icon === "history" && (
+                                            <View style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+                                                <Clock size={26} color={iconColor} />
+                                            </View>
+                                        )}
+                                        {tab.icon === "profile" && (
+                                            <View style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+                                                <User size={26} color={iconColor} />
+                                            </View>
+                                        )}
+                                        <Text style={{
+                                            fontSize: 11,
+                                            fontFamily: isActive ? 'Outfit_700Bold' : 'Outfit_400Regular',
+                                            color: isActive ? "#F59E0B" : "rgba(255,255,255,0.45)",
+                                            marginTop: 2,
+                                        }}>
+                                            {tab.label}
+                                        </Text>
+                                    </AnimatedPressable>
+                                </Link>
+                            );
+                        })}
+                    </View>
+                </View>
             </View>
         </View>
     );
 }
+

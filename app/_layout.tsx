@@ -1,13 +1,10 @@
 import { KkiapayProvider } from '@kkiapay-org/react-native-sdk';
+import { Outfit_400Regular, Outfit_600SemiBold, Outfit_700Bold, Outfit_900Black, useFonts } from '@expo-google-fonts/outfit';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import 'react-native-gesture-handler';
-
-// Indispensable sur Android : ferme le Chrome Custom Tab après le redirect OAuth
-// (Web3Auth / expo-web-browser). Sans cet appel, loginWithGoogle() ne se résout jamais.
-WebBrowser.maybeCompleteAuthSession();
 import Toast from 'react-native-toast-message';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
@@ -17,10 +14,21 @@ import { Web3AuthProvider } from '../contexts/Web3AuthContext';
 import "../global.css";
 import { deleteSecureData, getSecureData } from '../lib/storage';
 
+// Indispensable sur Android : ferme le Chrome Custom Tab après le redirect OAuth
+// (Web3Auth / expo-web-browser). Sans cet appel, loginWithGoogle() ne se résout jamais.
+WebBrowser.maybeCompleteAuthSession();
+
 function RootLayoutNav() {
   const { user, profile, loading } = useAuth();
   const router = useRouter();
   const segments = useSegments() as string[];
+
+  const [fontsLoaded] = useFonts({
+    Outfit_400Regular,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+    Outfit_900Black,
+  });
 
   useEffect(() => {
     if (loading) return;
@@ -83,7 +91,7 @@ function RootLayoutNav() {
     runRouting();
   }, [user, profile, loading, segments, router]);
 
-  if (loading) {
+  if (loading || !fontsLoaded) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator size="large" color="#F59E0B" />
@@ -91,7 +99,35 @@ function RootLayoutNav() {
     );
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+        animationDuration: 250,
+        gestureEnabled: true,
+        gestureDirection: 'horizontal',
+      }}
+    >
+      {/* Splash — fade */}
+      <Stack.Screen name="index" options={{ animation: 'fade' }} />
+
+      {/* Auth screens — fade for smoother onboarding feel */}
+      <Stack.Screen name="choix/index" options={{ animation: 'fade' }} />
+      <Stack.Screen name="connexion/index" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="connexion-sender/index" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="connexion-receiver/index" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="inscription-sender/index" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="inscription-receiver/index" options={{ animation: 'slide_from_right' }} />
+
+      {/* Home screens — fade for tab-like feel */}
+      <Stack.Screen name="sender-home/index" options={{ animation: 'fade' }} />
+      <Stack.Screen name="accueil/index" options={{ animation: 'fade' }} />
+
+      {/* Transfer success — slide from bottom like a modal celebration */}
+      <Stack.Screen name="sender-home/transfert-reussi" options={{ animation: 'slide_from_bottom' }} />
+    </Stack>
+  );
 }
 
 export default function Layout() {

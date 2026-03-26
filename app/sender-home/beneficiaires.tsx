@@ -72,36 +72,38 @@ export default function BeneficiariesScreen() {
     );
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50 dark:bg-[#221b10]">
+        <SafeAreaView className="flex-1 bg-gray-50">
             <View className="flex-1">
                 {/* Header */}
-                <View className="px-6 py-4 flex-row items-center gap-4">
+                <View className="px-7 py-5 flex-row items-center gap-4">
                     <TouchableOpacity
                         onPress={() => router.back()}
-                        className="h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-white/10 shadow-sm"
+                        className="h-11 w-11 items-center justify-center rounded-2xl bg-white"
+                        style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 }}
                     >
                         <ArrowLeft size={20} color="#1f2937" />
                     </TouchableOpacity>
-                    <Text className="text-lg font-bold text-gray-900 dark:text-white flex-1">
+                    <Text className="text-xl font-bold text-gray-900 flex-1">
                         Bénéficiaires récents
                     </Text>
                 </View>
 
                 {/* Search */}
-                <View className="px-6 mb-4">
-                    <View className="flex-row items-center bg-white dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/10 px-4 py-3 gap-3">
+                <View className="px-7 mb-5">
+                    <View className="flex-row items-center bg-white rounded-3xl border border-gray-200/80 px-5 py-4 gap-3"
+                        style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 1 }}>
                         <Search size={18} color="#9ca3af" />
                         <TextInput
                             value={search}
                             onChangeText={setSearch}
                             placeholder="Rechercher un bénéficiaire..."
                             placeholderTextColor="#9ca3af"
-                            className="flex-1 text-sm text-gray-900 dark:text-white"
+                            className="flex-1 text-sm text-gray-900"
                         />
                     </View>
                 </View>
 
-                <ScrollView contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }} className="px-6">
+                <ScrollView contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }} className="px-7">
                     {loading ? (
                         <View className="flex-1 items-center justify-center py-20">
                             <ActivityIndicator size="large" color="#F59E0B" />
@@ -109,10 +111,10 @@ export default function BeneficiariesScreen() {
                         </View>
                     ) : filtered.length === 0 ? (
                         <View className="flex-1 items-center justify-center py-20">
-                            <View className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 dark:bg-white/5">
+                            <View className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
                                 <User size={36} color="#9ca3af" />
                             </View>
-                            <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+                            <Text className="text-lg font-semibold text-gray-900">
                                 {search ? "Aucun résultat" : "Aucun bénéficiaire"}
                             </Text>
                             <Text className="mt-2 text-sm text-gray-500 text-center max-w-[250px]">
@@ -129,19 +131,20 @@ export default function BeneficiariesScreen() {
                                 return (
                                     <TouchableOpacity
                                         key={b.wuraId}
-                                        className="flex-row items-center justify-between rounded-2xl bg-white dark:bg-white/5 p-4 border border-gray-100 dark:border-white/5 shadow-sm active:opacity-80"
+                                        className="flex-row items-center justify-between rounded-3xl bg-white p-5 border border-gray-100/80 active:opacity-80"
+                                        style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 1 }}
                                     >
-                                        <View className="flex-row items-center gap-3">
-                                            <View className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
-                                                <Text className="text-base font-bold text-amber-600">
+                                        <View className="flex-row items-center gap-4">
+                                            <View className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+                                                <Text className="text-lg font-bold text-amber-600">
                                                     {initial}
                                                 </Text>
                                             </View>
                                             <View className="flex-col">
-                                                <Text className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                <Text className="text-sm font-semibold text-gray-900">
                                                     {b.name}
                                                 </Text>
-                                                <Text className="text-xs text-gray-500 dark:text-gray-400">
+                                                <Text className="text-xs text-gray-500">
                                                     {b.txCount} transfert{b.txCount > 1 ? "s" : ""} • Dernier le {b.lastDate.toLocaleDateString('fr-FR', {
                                                         day: 'numeric',
                                                         month: 'short'
@@ -150,7 +153,7 @@ export default function BeneficiariesScreen() {
                                             </View>
                                         </View>
                                         <View className="items-end">
-                                            <Text className="text-sm font-bold text-gray-900 dark:text-white">
+                                            <Text className="text-sm font-bold text-gray-900">
                                                 {b.totalSent.toLocaleString("fr-FR")} F
                                             </Text>
                                             <Text className="text-[10px] text-gray-400">total envoyé</Text>

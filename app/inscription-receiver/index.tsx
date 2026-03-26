@@ -1,11 +1,11 @@
 import { signInWithCustomToken } from "@react-native-firebase/auth";
 import { Link, useRouter } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
-import { useColorScheme } from "nativewind";
 import { useState } from "react";
 import { ActivityIndicator, Alert, Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+import { FadeInView } from "../../components/FadeInView";
 import { useWeb3Auth } from "../../contexts/Web3AuthContext";
 import api from "../../lib/api";
 import { auth } from "../../lib/firebase";
@@ -13,8 +13,6 @@ import { AuthService } from "../../services/auth";
 
 export default function ReceiverSignupScreen() {
     const router = useRouter();
-    const { colorScheme } = useColorScheme();
-    const isDark = colorScheme === "dark";
     const [loading, setLoading] = useState(false);
 
     const { loginWithGoogle } = useWeb3Auth();
@@ -85,8 +83,9 @@ export default function ReceiverSignupScreen() {
 
     return (
         <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-background">
-            <View className="flex-1 items-center justify-center p-4">
-                <View className="w-full max-w-md flex-col gap-3 rounded-3xl bg-muted px-6 py-4">
+            <View className="flex-1 items-center justify-center p-5">
+                <FadeInView delay={0} className="w-full max-w-md flex-col gap-4 rounded-[32px] bg-muted px-8 py-6"
+                    style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 20, elevation: 3 }}>
                     {/* Back button */}
                     <TouchableOpacity
                         onPress={() => router.back()}
@@ -99,7 +98,7 @@ export default function ReceiverSignupScreen() {
                     {/* Logo */}
                     <View className="items-center gap-1">
                         <Image
-                            source={isDark ? require("../../assets/images/wuraa-removebg-logoVersionDark.png") : require("../../assets/images/wuralogo-removebg-preview.png")}
+                            source={require("../../assets/images/wuralogo-removebg-preview.png")}
                             style={{ width: 280, height: 80 }}
                             resizeMode="contain"
                         />
@@ -109,11 +108,12 @@ export default function ReceiverSignupScreen() {
                     </View>
 
                     {/* Google Sign Up */}
-                    <View className="items-center gap-6">
-                        <View className="w-20 h-20 rounded-full bg-white items-center justify-center shadow-lg shadow-black/10">
+                    <View className="items-center gap-7">
+                        <View className="w-24 h-24 rounded-full bg-white items-center justify-center"
+                            style={{ shadowColor: '#FFD700', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 16, elevation: 4 }}>
                             <Image
                                 source={{ uri: "https://www.google.com/favicon.ico" }}
-                                className="w-10 h-10"
+                                className="w-12 h-12"
                                 resizeMode="contain"
                             />
                         </View>
@@ -125,8 +125,8 @@ export default function ReceiverSignupScreen() {
                         <TouchableOpacity
                             onPress={handleGoogleSignup}
                             disabled={loading}
-                            className="flex-row w-full items-center justify-center gap-3 rounded-2xl bg-white border-2 border-gray-200 px-6 py-4 active:opacity-80 shadow-sm"
-                            style={loading ? { opacity: 0.6 } : {}}
+                            className="flex-row w-full items-center justify-center gap-3 rounded-full bg-white border-2 border-gray-100 px-6 py-5 active:opacity-80"
+                            style={loading ? { opacity: 0.6 } : { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 16, elevation: 3 }}
                         >
                             {loading ? (
                                 <ActivityIndicator color="#064E3B" />
@@ -137,7 +137,7 @@ export default function ReceiverSignupScreen() {
                                         className="w-5 h-5"
                                         resizeMode="contain"
                                     />
-                                    <Text className="text-base font-semibold text-gray-700">
+                                    <Text className="text-lg font-bold text-gray-700">
                                         S'inscrire avec Google
                                     </Text>
                                 </>
@@ -157,8 +157,8 @@ export default function ReceiverSignupScreen() {
                             </Link>
                         </View>
                     </View>
-                </View>
+                </FadeInView>
             </View>
-        </SafeAreaView>
+        </SafeAreaView >
     );
 }

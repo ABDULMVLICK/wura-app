@@ -1,26 +1,24 @@
 import { useRouter } from "expo-router";
 import { ArrowLeft, ArrowUpRight, Clock, RefreshCw } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Dimensions, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TransferService } from "../../services/transfers";
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// Map statuts Prisma → labels français + style inline pour Android
+// Map statuts Prisma → labels français + style
 const STATUS_CONFIG: Record<string, { label: string; bgColor: string; textColor: string; dotColor: string }> = {
     INITIATED: { label: "Initiée", bgColor: "#EFF6FF", textColor: "#2563EB", dotColor: "#3B82F6" },
     PAYIN_PENDING: { label: "Paiement en cours", bgColor: "#FFFBEB", textColor: "#D97706", dotColor: "#F59E0B" },
     PAYIN_SUCCESS: { label: "Paiement reçu", bgColor: "#ECFDF5", textColor: "#059669", dotColor: "#10B981" },
-    BRIDGE_PROCESSING: { label: "Transfert en cours", bgColor: "#F5F3FF", textColor: "#7C3AED", dotColor: "#8B5CF6" },
+    BRIDGE_PROCESSING: { label: "Transfert en cours", bgColor: "rgba(245,158,11,0.15)", textColor: "#F59E0B", dotColor: "#F59E0B" },
     BRIDGE_SUCCESS: { label: "Transfert finalisé", bgColor: "#ECFDF5", textColor: "#059669", dotColor: "#10B981" },
     WAITING_USER_OFFRAMP: { label: "En attente retrait", bgColor: "#FFF7ED", textColor: "#EA580C", dotColor: "#F97316" },
-    OFFRAMP_PROCESSING: { label: "Conversion EUR", bgColor: "#F5F3FF", textColor: "#7C3AED", dotColor: "#8B5CF6" },
+    OFFRAMP_PROCESSING: { label: "Conversion EUR", bgColor: "rgba(245,158,11,0.15)", textColor: "#F59E0B", dotColor: "#F59E0B" },
     COMPLETED: { label: "Terminé", bgColor: "#ECFDF5", textColor: "#059669", dotColor: "#10B981" },
     PAYIN_FAILED: { label: "Paiement échoué", bgColor: "#FEF2F2", textColor: "#DC2626", dotColor: "#EF4444" },
     BRIDGE_FAILED: { label: "Transfert échoué", bgColor: "#FEF2F2", textColor: "#DC2626", dotColor: "#EF4444" },
     OFFRAMP_FAILED: { label: "Conversion échouée", bgColor: "#FEF2F2", textColor: "#DC2626", dotColor: "#EF4444" },
-    REFUNDED: { label: "Remboursé", bgColor: "#F3F4F6", textColor: "#6B7280", dotColor: "#9CA3AF" },
+    REFUNDED: { label: "Remboursé", bgColor: "rgba(255,255,255,0.1)", textColor: "#9CA3AF", dotColor: "#9CA3AF" },
 };
 
 export default function SenderHistoriqueScreen() {
@@ -60,67 +58,99 @@ export default function SenderHistoriqueScreen() {
     }, {});
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.flex}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#14533d' }}>
+            <View style={{ flex: 1 }}>
                 {/* Header */}
-                <View style={styles.header}>
+                <View style={{
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                    paddingHorizontal: 20, paddingVertical: 16,
+                }}>
                     <TouchableOpacity
                         onPress={() => router.back()}
-                        style={styles.backButton}
+                        style={{
+                            width: 42, height: 42, borderRadius: 21,
+                            backgroundColor: 'rgba(255,255,255,0.12)',
+                            alignItems: 'center', justifyContent: 'center',
+                        }}
                         activeOpacity={0.7}
                     >
-                        <ArrowLeft size={20} color="#1f2937" />
+                        <ArrowLeft size={20} color="#ffffff" />
                     </TouchableOpacity>
-                    <View style={styles.headerCenter}>
-                        <Text style={styles.headerTitle}>Historique</Text>
-                        <Text style={styles.headerSubtitle}>
+                    <View style={{ flex: 1, alignItems: 'center' }}>
+                        <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 17, color: '#ffffff' }}>Historique</Text>
+                        <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
                             {transactions.length} transfert{transactions.length !== 1 ? "s" : ""}
                         </Text>
                     </View>
                     <TouchableOpacity
                         onPress={handleRefresh}
                         disabled={refreshing}
-                        style={styles.refreshButton}
+                        style={{
+                            width: 42, height: 42, borderRadius: 21,
+                            backgroundColor: 'rgba(255,255,255,0.12)',
+                            alignItems: 'center', justifyContent: 'center',
+                        }}
                         activeOpacity={0.7}
                     >
                         {refreshing ? (
                             <ActivityIndicator size="small" color="#F59E0B" />
                         ) : (
-                            <RefreshCw size={18} color="#6b7280" />
+                            <RefreshCw size={18} color="rgba(255,255,255,0.7)" />
                         )}
                     </TouchableOpacity>
                 </View>
 
                 <ScrollView
-                    contentContainerStyle={styles.scrollContent}
+                    contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40, flexGrow: 1 }}
                     showsVerticalScrollIndicator={false}
                 >
                     {loading ? (
-                        <View style={styles.emptyContainer}>
-                            <View style={styles.loadingCircle}>
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 }}>
+                            <View style={{
+                                width: 80, height: 80, borderRadius: 40,
+                                backgroundColor: 'rgba(245,158,11,0.15)',
+                                alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+                            }}>
                                 <ActivityIndicator size="large" color="#F59E0B" />
                             </View>
-                            <Text style={styles.emptyText}>Chargement...</Text>
+                            <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>Chargement...</Text>
                         </View>
                     ) : transactions.length === 0 ? (
-                        <View style={styles.emptyContainer}>
-                            <View style={styles.emptyIcon}>
-                                <Clock size={40} color="#d1d5db" />
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 }}>
+                            <View style={{
+                                width: 80, height: 80, borderRadius: 40,
+                                backgroundColor: 'rgba(255,255,255,0.08)',
+                                alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+                            }}>
+                                <Clock size={36} color="rgba(255,255,255,0.3)" />
                             </View>
-                            <Text style={styles.emptyTitle}>Aucun transfert</Text>
-                            <Text style={styles.emptyText}>
+                            <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 18, color: '#ffffff', marginBottom: 8 }}>
+                                Aucun transfert
+                            </Text>
+                            <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', lineHeight: 20 }}>
                                 Vos transferts apparaîtront ici{"\n"}après votre premier envoi.
                             </Text>
                         </View>
                     ) : (
                         Object.entries(groupedTransactions).map(([monthKey, txs]) => (
-                            <View key={monthKey} style={styles.monthGroup}>
+                            <View key={monthKey} style={{ marginBottom: 28 }}>
                                 {/* Month Header */}
-                                <Text style={styles.monthTitle}>
+                                <Text style={{
+                                    fontFamily: 'Outfit_600SemiBold', fontSize: 13,
+                                    color: 'rgba(255,255,255,0.45)', marginBottom: 12,
+                                    paddingLeft: 4, letterSpacing: 0.5, textTransform: 'uppercase',
+                                }}>
                                     {monthKey.charAt(0).toUpperCase() + monthKey.slice(1)}
                                 </Text>
 
-                                <View style={styles.cardContainer}>
+                                <View style={{
+                                    backgroundColor: '#ffffff', borderRadius: 24,
+                                    overflow: 'hidden',
+                                    ...Platform.select({
+                                        android: { elevation: 4 },
+                                        ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 16 },
+                                    }),
+                                }}>
                                     {(txs as any[]).map((tx: any, index: number) => {
                                         const receiverName = tx.receiver?.wuraId
                                             ? `@${tx.receiver.wuraId}`
@@ -129,7 +159,7 @@ export default function SenderHistoriqueScreen() {
                                         const amountCFA = Number(tx.amountFiatIn || 0);
                                         const amountEUR = Number(tx.amountFiatOutExpected || 0);
                                         const statusConfig = STATUS_CONFIG[tx.status] || {
-                                            label: tx.status, bgColor: "#F3F4F6", textColor: "#6B7280", dotColor: "#9CA3AF"
+                                            label: tx.status, bgColor: "rgba(255,255,255,0.1)", textColor: "#9CA3AF", dotColor: "#9CA3AF"
                                         };
                                         const isFailed = tx.status?.includes("FAILED");
                                         const isRefunded = tx.status === "REFUNDED";
@@ -140,42 +170,52 @@ export default function SenderHistoriqueScreen() {
                                             <TouchableOpacity
                                                 key={tx.id || index}
                                                 onPress={() => router.push({
-                                                    pathname: "/sender-home/transfert-reussi",
-                                                    params: { transactionId: tx.id }
+                                                    pathname: "/transaction-details",
+                                                    params: { id: tx.id }
                                                 })}
                                                 style={[
-                                                    styles.txRow,
-                                                    !isLast && styles.txRowBorder
+                                                    {
+                                                        flexDirection: 'row', alignItems: 'center',
+                                                        paddingHorizontal: 18, paddingVertical: 16,
+                                                    },
+                                                    !isLast && {
+                                                        borderBottomWidth: StyleSheet.hairlineWidth,
+                                                        borderBottomColor: '#F3F4F6',
+                                                    }
                                                 ]}
                                                 activeOpacity={0.6}
                                             >
                                                 {/* Avatar */}
-                                                <View style={[
-                                                    styles.avatar,
-                                                    {
-                                                        backgroundColor: isFailed || isRefunded
-                                                            ? "#FEE2E2"
-                                                            : isCompleted ? "#D1FAE5" : "#FEF3C7"
-                                                    }
-                                                ]}>
-                                                    <Text style={[
-                                                        styles.avatarText,
-                                                        {
-                                                            color: isFailed || isRefunded
-                                                                ? "#DC2626"
-                                                                : isCompleted ? "#059669" : "#D97706"
-                                                        }
-                                                    ]}>
+                                                <View style={{
+                                                    width: 46, height: 46, borderRadius: 23,
+                                                    alignItems: 'center', justifyContent: 'center',
+                                                    marginRight: 14,
+                                                    backgroundColor: isFailed || isRefunded
+                                                        ? "#FEE2E2"
+                                                        : isCompleted ? "#D1FAE5" : "#FEF3C7",
+                                                }}>
+                                                    <Text style={{
+                                                        fontFamily: 'Outfit_700Bold', fontSize: 17,
+                                                        color: isFailed || isRefunded
+                                                            ? "#DC2626"
+                                                            : isCompleted ? "#059669" : "#D97706",
+                                                    }}>
                                                         {initial}
                                                     </Text>
                                                 </View>
 
                                                 {/* Info */}
-                                                <View style={styles.txInfo}>
-                                                    <Text style={styles.txName} numberOfLines={1}>
+                                                <View style={{ flex: 1, marginRight: 12 }}>
+                                                    <Text style={{
+                                                        fontFamily: 'Outfit_600SemiBold', fontSize: 15,
+                                                        color: '#111827', marginBottom: 3,
+                                                    }} numberOfLines={1}>
                                                         {receiverName}
                                                     </Text>
-                                                    <Text style={styles.txDate}>
+                                                    <Text style={{
+                                                        fontFamily: 'Outfit_400Regular', fontSize: 12,
+                                                        color: '#9CA3AF', marginBottom: 5,
+                                                    }}>
                                                         {new Date(tx.createdAt || tx.date).toLocaleDateString('fr-FR', {
                                                             day: 'numeric',
                                                             month: 'short',
@@ -184,29 +224,44 @@ export default function SenderHistoriqueScreen() {
                                                         })}
                                                     </Text>
                                                     {/* Status Badge */}
-                                                    <View style={[styles.statusBadge, { backgroundColor: statusConfig.bgColor }]}>
-                                                        <View style={[styles.statusDot, { backgroundColor: statusConfig.dotColor }]} />
-                                                        <Text style={[styles.statusText, { color: statusConfig.textColor }]}>
+                                                    <View style={{
+                                                        flexDirection: 'row', alignItems: 'center',
+                                                        alignSelf: 'flex-start',
+                                                        paddingHorizontal: 10, paddingVertical: 4,
+                                                        borderRadius: 12, gap: 5,
+                                                        backgroundColor: statusConfig.bgColor,
+                                                    }}>
+                                                        <View style={{
+                                                            width: 5, height: 5, borderRadius: 2.5,
+                                                            backgroundColor: statusConfig.dotColor,
+                                                        }} />
+                                                        <Text style={{
+                                                            fontFamily: 'Outfit_600SemiBold', fontSize: 10,
+                                                            color: statusConfig.textColor,
+                                                        }}>
                                                             {statusConfig.label}
                                                         </Text>
                                                     </View>
                                                 </View>
 
                                                 {/* Amount */}
-                                                <View style={styles.txAmountSection}>
-                                                    <Text style={[
-                                                        styles.txAmountMain,
-                                                        { color: isFailed || isRefunded ? "#EF4444" : "#111827" }
-                                                    ]}>
+                                                <View style={{ alignItems: 'flex-end' }}>
+                                                    <Text style={{
+                                                        fontFamily: 'Outfit_700Bold', fontSize: 15,
+                                                        color: isFailed || isRefunded ? "#EF4444" : "#111827",
+                                                    }}>
                                                         {isFailed || isRefunded ? "−" : ""}{amountCFA.toLocaleString("fr-FR")} F
                                                     </Text>
-                                                    <Text style={styles.txAmountSub}>
+                                                    <Text style={{
+                                                        fontFamily: 'Outfit_400Regular', fontSize: 11,
+                                                        color: '#9CA3AF', marginTop: 2,
+                                                    }}>
                                                         ≈ {amountEUR.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
                                                     </Text>
                                                     <ArrowUpRight
                                                         size={12}
                                                         color={isFailed || isRefunded ? "#EF4444" : "#F59E0B"}
-                                                        style={{ marginTop: 2 }}
+                                                        style={{ marginTop: 3 }}
                                                     />
                                                 </View>
                                             </TouchableOpacity>
@@ -221,186 +276,3 @@ export default function SenderHistoriqueScreen() {
         </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#F9FAFB",
-    },
-    flex: {
-        flex: 1,
-    },
-    header: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: "#FFFFFF",
-        alignItems: "center",
-        justifyContent: "center",
-        ...Platform.select({
-            android: { elevation: 2 },
-            ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
-        }),
-    },
-    headerCenter: {
-        flex: 1,
-        alignItems: "center",
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: "#111827",
-    },
-    headerSubtitle: {
-        fontSize: 12,
-        color: "#9CA3AF",
-        marginTop: 2,
-    },
-    refreshButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: "#FFFFFF",
-        alignItems: "center",
-        justifyContent: "center",
-        ...Platform.select({
-            android: { elevation: 2 },
-            ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 },
-        }),
-    },
-    scrollContent: {
-        paddingHorizontal: 20,
-        paddingBottom: 40,
-        flexGrow: 1,
-    },
-    emptyContainer: {
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        paddingVertical: 80,
-    },
-    loadingCircle: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: "#FEF3C7",
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 16,
-    },
-    emptyIcon: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: "#F3F4F6",
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 16,
-    },
-    emptyTitle: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: "#111827",
-        marginBottom: 8,
-    },
-    emptyText: {
-        fontSize: 14,
-        color: "#9CA3AF",
-        textAlign: "center",
-        lineHeight: 20,
-    },
-    monthGroup: {
-        marginBottom: 24,
-    },
-    monthTitle: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#6B7280",
-        marginBottom: 12,
-        paddingLeft: 4,
-        letterSpacing: 0.3,
-    },
-    cardContainer: {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 20,
-        overflow: "hidden",
-        ...Platform.select({
-            android: { elevation: 3 },
-            ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 12 },
-        }),
-    },
-    txRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-    },
-    txRowBorder: {
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: "#F3F4F6",
-    },
-    avatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        alignItems: "center",
-        justifyContent: "center",
-        marginRight: 12,
-    },
-    avatarText: {
-        fontSize: 16,
-        fontWeight: "700",
-    },
-    txInfo: {
-        flex: 1,
-        marginRight: 12,
-    },
-    txName: {
-        fontSize: 15,
-        fontWeight: "600",
-        color: "#111827",
-        marginBottom: 2,
-    },
-    txDate: {
-        fontSize: 12,
-        color: "#9CA3AF",
-        marginBottom: 4,
-    },
-    statusBadge: {
-        flexDirection: "row",
-        alignItems: "center",
-        alignSelf: "flex-start",
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: 10,
-        gap: 4,
-    },
-    statusDot: {
-        width: 5,
-        height: 5,
-        borderRadius: 2.5,
-    },
-    statusText: {
-        fontSize: 10,
-        fontWeight: "600",
-    },
-    txAmountSection: {
-        alignItems: "flex-end",
-    },
-    txAmountMain: {
-        fontSize: 14,
-        fontWeight: "700",
-    },
-    txAmountSub: {
-        fontSize: 11,
-        color: "#9CA3AF",
-        marginTop: 1,
-    },
-});

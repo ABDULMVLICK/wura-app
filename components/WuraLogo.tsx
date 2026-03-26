@@ -1,4 +1,3 @@
-import { useColorScheme } from "nativewind";
 import { Image, Text, View } from "react-native";
 
 interface WuraLogoProps {
@@ -14,18 +13,15 @@ const SIZES = {
     xl: { width: 600, height: 160 },
 };
 
-const LOGO_LIGHT = require("../assets/images/wuralogo-removebg-preview.png");
-const LOGO_DARK = require("../assets/images/wuraa-removebg-logoVersionDark.png");
+const LOGO = require("../assets/images/wuralogo-removebg-preview.png");
 
 export function WuraLogo({ size = "md", showSubtitle = false, subtitle }: WuraLogoProps) {
-    const { colorScheme } = useColorScheme();
     const dimensions = SIZES[size];
-    const logoSource = colorScheme === "dark" ? LOGO_DARK : LOGO_LIGHT;
 
     return (
         <View className="flex-col items-center gap-3">
             <Image
-                source={logoSource}
+                source={LOGO}
                 style={{ width: dimensions.width, height: dimensions.height }}
                 resizeMode="contain"
             />

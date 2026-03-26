@@ -2,10 +2,11 @@ import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { signInWithPhoneNumber } from "@react-native-firebase/auth";
 import { Link, useRouter } from "expo-router";
 import { ArrowLeft, ArrowRight, Phone, User } from "lucide-react-native";
-import { useColorScheme } from "nativewind";
 import { useState } from "react";
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "../../components/AnimatedPressable";
+import { FadeInView } from "../../components/FadeInView";
 import { FormField } from "../../components/FormField";
 import { useAuth } from "../../contexts/AuthContext";
 import { auth } from "../../lib/firebase";
@@ -14,8 +15,6 @@ import { AuthService } from "../../services/auth";
 export default function SenderSignupScreen() {
     const { refreshProfile } = useAuth();
     const router = useRouter();
-    const { colorScheme } = useColorScheme();
-    const isDark = colorScheme === "dark";
     const [nom, setNom] = useState("");
     const [prenom, setPrenom] = useState("");
     const [telephone, setTelephone] = useState("");
@@ -100,8 +99,9 @@ export default function SenderSignupScreen() {
                 className="flex-1"
             >
                 <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
-                    <View className="flex-1 items-center justify-center p-4">
-                        <View className="w-full max-w-md flex-col gap-3 rounded-3xl bg-muted px-6 py-4">
+                    <View className="flex-1 items-center justify-center p-5">
+                        <FadeInView delay={0} className="w-full max-w-md flex-col gap-4 rounded-[32px] bg-muted px-8 py-6"
+                            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 20, elevation: 3 }}>
                             {/* Back button */}
                             <TouchableOpacity
                                 onPress={() => {
@@ -121,7 +121,7 @@ export default function SenderSignupScreen() {
                             {/* Logo */}
                             <View className="items-center gap-1">
                                 <Image
-                                    source={isDark ? require("../../assets/images/wuraa-removebg-logoVersionDark.png") : require("../../assets/images/wuralogo-removebg-preview.png")}
+                                    source={require("../../assets/images/wuralogo-removebg-preview.png")}
                                     style={{ width: 280, height: 80 }}
                                     resizeMode="contain"
                                 />
@@ -166,14 +166,14 @@ export default function SenderSignupScreen() {
                                     <TouchableOpacity
                                         onPress={handleSendCode}
                                         disabled={loading}
-                                        className="mt-4 flex-row w-full items-center justify-center gap-3 rounded-2xl bg-[#064E3B] px-6 py-4 active:opacity-80"
-                                        style={loading ? { opacity: 0.6 } : {}}
+                                        className="mt-6 flex-row w-full items-center justify-center gap-3 rounded-full bg-[#064E3B] px-6 py-5 active:opacity-80"
+                                        style={loading ? { opacity: 0.6 } : { shadowColor: '#064E3B', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 6 }}
                                     >
                                         {loading ? (
                                             <ActivityIndicator color="white" />
                                         ) : (
                                             <>
-                                                <Text className="text-base font-semibold text-white">
+                                                <Text className="text-lg font-bold text-white">
                                                     Créer mon compte
                                                 </Text>
                                                 <ArrowRight size={20} color="white" />
@@ -206,11 +206,11 @@ export default function SenderSignupScreen() {
                                         onChangeText={setOtp}
                                     />
 
-                                    <TouchableOpacity
+                                    <AnimatedPressable
                                         onPress={handleVerifyOtp}
                                         disabled={loading}
-                                        className="mt-4 flex-row w-full items-center justify-center gap-3 rounded-2xl bg-[#064E3B] px-6 py-4 active:opacity-80"
-                                        style={loading ? { opacity: 0.6 } : {}}
+                                        className="mt-6 flex-row w-full items-center justify-center gap-3 rounded-full bg-[#064E3B] px-6 py-5"
+                                        style={loading ? { opacity: 0.6 } : { shadowColor: '#00F5A0', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 8 }}
                                     >
                                         {loading ? (
                                             <ActivityIndicator color="white" />
@@ -222,7 +222,7 @@ export default function SenderSignupScreen() {
                                                 <ArrowRight size={20} color="white" />
                                             </>
                                         )}
-                                    </TouchableOpacity>
+                                    </AnimatedPressable>
 
                                     <TouchableOpacity
                                         onPress={handleSendCode}
@@ -234,10 +234,10 @@ export default function SenderSignupScreen() {
                                     </TouchableOpacity>
                                 </View>
                             )}
-                        </View>
+                        </FadeInView>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </SafeAreaView>
+        </SafeAreaView >
     );
 }

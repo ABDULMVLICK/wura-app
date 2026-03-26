@@ -1,32 +1,54 @@
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
-import { Animated, Image, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Animated, Image, View } from "react-native";
 
 export default function SplashScreen() {
     const router = useRouter();
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const scaleAnim = useRef(new Animated.Value(0.8)).current;
+    const scaleAnim = useRef(new Animated.Value(0.85)).current;
+    const subtitleFade = useRef(new Animated.Value(0)).current;
+    const dot1 = useRef(new Animated.Value(0.3)).current;
+    const dot2 = useRef(new Animated.Value(0.6)).current;
+    const dot3 = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
-        // Fade in + scale up animation
+        // Logo fade in + scale
         Animated.parallel([
             Animated.timing(fadeAnim, {
                 toValue: 1,
-                duration: 800,
+                duration: 900,
                 useNativeDriver: true,
             }),
             Animated.spring(scaleAnim, {
                 toValue: 1,
-                friction: 8,
-                tension: 40,
+                friction: 7,
+                tension: 35,
                 useNativeDriver: true,
             }),
         ]).start();
 
-        // Navigate to choice screen after 2 seconds if not already navigating/logged in
+        // Subtitle delayed fade in
+        Animated.timing(subtitleFade, {
+            toValue: 1,
+            duration: 800,
+            delay: 500,
+            useNativeDriver: true,
+        }).start();
+
+        // Pulsing dots animation
+        const animateDot = (dot: Animated.Value, delay: number) => {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(dot, { toValue: 1, duration: 500, delay, useNativeDriver: true }),
+                    Animated.timing(dot, { toValue: 0.2, duration: 500, useNativeDriver: true }),
+                ])
+            ).start();
+        };
+        animateDot(dot1, 0);
+        animateDot(dot2, 170);
+        animateDot(dot3, 340);
+
         const timer = setTimeout(() => {
-            // RootLayout handle already logged-in users, we only force /choix if not logged in
             router.replace("/choix");
         }, 2000);
 
@@ -34,32 +56,64 @@ export default function SplashScreen() {
     }, []);
 
     return (
-        <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-[#2e2f31]">
-            <View className="flex-1 items-center justify-center">
-                <Animated.View
-                    style={{
-                        opacity: fadeAnim,
-                        transform: [{ scale: scaleAnim }],
-                    }}
-                    className="items-center gap-2"
-                >
-                    <Image
-                        source={require("../assets/images/wuraa-removebg-logoVersionDark.png")}
-                        style={{ width: 300, height: 100 }}
-                        resizeMode="contain"
-                    />
-                    <Text className="mt-2 text-base text-white/60 font-medium">
-                        Transferts d'argent premium
-                    </Text>
+        <View style={{
+            flex: 1, backgroundColor: '#14533d',
+            alignItems: 'center', justifyContent: 'center',
+        }}>
+            {/* Subtle radial glow behind logo */}
+            <View style={{
+                position: 'absolute', width: 300, height: 300, borderRadius: 150,
+                backgroundColor: 'rgba(245,158,11,0.06)',
+            }} />
 
-                    {/* Loading indicator */}
-                    <View className="mt-4 flex-row gap-2">
-                        <View className="w-2 h-2 rounded-full bg-[#F59E0B] opacity-60" />
-                        <View className="w-2 h-2 rounded-full bg-[#F59E0B] opacity-80" />
-                        <View className="w-2 h-2 rounded-full bg-[#F59E0B]" />
-                    </View>
-                </Animated.View>
-            </View>
-        </SafeAreaView>
+            <Animated.View style={{
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }],
+                alignItems: 'center',
+            }}>
+                <Image
+                    source={require("../assets/images/wuralogo-removebg-preview.png")}
+                    style={{ width: 280, height: 95 }}
+                    resizeMode="contain"
+                />
+
+                <Animated.Text style={{
+                    fontFamily: 'Outfit_400Regular',
+                    fontSize: 15, color: 'rgba(255,255,255,0.45)',
+                    marginTop: 16, letterSpacing: 1,
+                    opacity: subtitleFade,
+                }}>
+                    Transferts d'argent simplifiés
+                </Animated.Text>
+
+                {/* Loading dots */}
+                <View style={{
+                    flexDirection: 'row', gap: 10, marginTop: 40,
+                }}>
+                    <Animated.View style={{
+                        opacity: dot1,
+                        width: 8, height: 8, borderRadius: 4, backgroundColor: '#F59E0B',
+                    }} />
+                    <Animated.View style={{
+                        opacity: dot2,
+                        width: 8, height: 8, borderRadius: 4, backgroundColor: '#F59E0B',
+                    }} />
+                    <Animated.View style={{
+                        opacity: dot3,
+                        width: 8, height: 8, borderRadius: 4, backgroundColor: '#F59E0B',
+                    }} />
+                </View>
+            </Animated.View>
+
+            {/* Bottom tagline */}
+            <Animated.Text style={{
+                position: 'absolute', bottom: 50,
+                fontFamily: 'Outfit_400Regular', fontSize: 12,
+                color: 'rgba(255,255,255,0.25)', letterSpacing: 0.5,
+                opacity: subtitleFade,
+            }}>
+                Wura • Afrique ↔ Europe
+            </Animated.Text>
+        </View>
     );
 }

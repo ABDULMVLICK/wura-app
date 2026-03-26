@@ -43,7 +43,7 @@ const FlagItaly = () => (
 );
 
 const FlagEmoji = ({ emoji }: { emoji: string }) => (
-    <View className="flex-1 items-center justify-center bg-gray-100 dark:bg-slate-800">
+    <View className="flex-1 items-center justify-center bg-gray-100">
         <Text className="text-sm">{emoji}</Text>
     </View>
 );
@@ -76,15 +76,15 @@ export function CountrySelector({ visible, onClose, onSelect, selectedCode }: Co
             onRequestClose={onClose}
         >
             <View className="flex-1 justify-end bg-black/50">
-                <View className="bg-white dark:bg-[#1a150c] rounded-t-3xl w-full max-h-[70%]">
+                <View className="bg-white rounded-t-3xl w-full max-h-[70%]">
                     {/* Header */}
-                    <View className="flex-row items-center justify-between p-6 border-b border-gray-100 dark:border-white/10">
-                        <Text className="text-lg font-bold text-gray-900 dark:text-white">Sélectionner un pays</Text>
+                    <View className="flex-row items-center justify-between p-6 border-b border-gray-100">
+                        <Text className="text-lg font-bold text-gray-900">Sélectionner un pays</Text>
                         <TouchableOpacity
                             onPress={onClose}
-                            className="bg-gray-100 dark:bg-white/10 p-2 rounded-full"
+                            className="bg-gray-100 p-2 rounded-full"
                         >
-                            <X size={20} className="text-gray-500 dark:text-gray-400" color="gray" />
+                            <X size={20} className="text-gray-500" color="gray" />
                         </TouchableOpacity>
                     </View>
 
@@ -100,25 +100,25 @@ export function CountrySelector({ visible, onClose, onSelect, selectedCode }: Co
                                 className={clsx(
                                     "flex-row items-center justify-between p-4 my-1 rounded-xl",
                                     selectedCode === country.code
-                                        ? "bg-[#064E3B]/10 dark:bg-emerald-900/20"
-                                        : "active:bg-gray-50 dark:active:bg-white/5"
+                                        ? "bg-[#064E3B]/10"
+                                        : "active:bg-gray-50"
                                 )}
                             >
                                 <View className="flex-row items-center gap-4">
-                                    <View className="w-8 h-6 rounded-sm overflow-hidden border border-gray-200 dark:border-white/10">
+                                    <View className="w-8 h-6 rounded-sm overflow-hidden border border-gray-200">
                                         {country.flag}
                                     </View>
                                     <Text className={clsx(
                                         "text-base font-medium",
                                         selectedCode === country.code
-                                            ? "text-[#064E3B] dark:text-emerald-400"
-                                            : "text-gray-700 dark:text-gray-300"
+                                            ? "text-[#064E3B]"
+                                            : "text-gray-700"
                                     )}>
                                         {country.name}
                                     </Text>
                                 </View>
                                 {selectedCode === country.code && (
-                                    <Check size={20} className="text-[#064E3B] dark:text-emerald-400" color="#10B981" />
+                                    <Check size={20} className="text-[#064E3B]" color="#10B981" />
                                 )}
                             </TouchableOpacity>
                         ))}

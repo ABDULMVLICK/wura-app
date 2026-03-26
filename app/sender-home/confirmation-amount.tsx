@@ -1,149 +1,270 @@
-import { clsx } from "clsx";
 import { useRouter } from "expo-router";
 import { ArrowRight, ChevronLeft, Clock, Zap } from "lucide-react-native";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "../../components/AnimatedPressable";
+import { SenderGradient } from "../../components/SenderGradient";
 import { useTransfer } from "../../contexts/TransferContext";
 
 export default function ConfirmationAmountScreen() {
     const router = useRouter();
-    const { state, setDeliverySpeed, getCalculatedXOF, getCalculatedEUR, getFeesXOF, getTotalXOF } = useTransfer();
+    const { state, setDeliverySpeed, setInputValue, getCalculatedXOF, getCalculatedEUR, getTotalXOF } = useTransfer();
+
+    const [includeFees, setIncludeFees] = useState(false);
+    const [originalInput] = useState(state.inputValue);
 
     const numericAmount = parseInt(getCalculatedXOF(), 10) || 0;
     const euroAmount = getCalculatedEUR() || "0.00";
     const isLoading = state.isQuoting;
 
+    const handleToggleIncludeFees = (value: boolean) => {
+        setIncludeFees(value);
+        if (value && state.quote) {
+            // Calculer la base ajustée pour que totalToPayCfa = montant original tapé
+            const ratio = state.quote.baseAmountCfa / state.quote.totalToPayCfa;
+            const adjustedBase = Math.round(numericAmount * ratio);
+            setInputValue(adjustedBase.toString());
+        } else {
+            setInputValue(originalInput);
+        }
+    };
+
     const handleConfirm = () => {
-        // Navigate to Recipient Search (which allows selecting or adding beneficiary)
-        // We pass the amount along just in case it's needed later
         router.push("/sender-home/recipient-search");
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-white dark:bg-[#221b10]">
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#14533d' }}>
+            <SenderGradient heightRatio={0.48} />
+
             {/* Header */}
-            <View className="relative px-6 py-4 flex-row items-center justify-center z-10">
+            <View style={{
+                position: 'relative', paddingHorizontal: 28, paddingVertical: 20,
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', zIndex: 1,
+            }}>
                 <TouchableOpacity
-                    onPress={() => router.back()}
-                    className="absolute left-6 h-10 w-10 items-center justify-center rounded-full bg-slate-50 dark:bg-white/10"
+                    onPress={() => { if (includeFees) setInputValue(originalInput); router.back(); }}
+                    style={{
+                        position: 'absolute', left: 28,
+                        height: 44, width: 44, alignItems: 'center', justifyContent: 'center',
+                        borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.12)',
+                        borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)',
+                    }}
                 >
-                    <ChevronLeft size={24} className="text-slate-900 dark:text-white" color="#0f172a" />
+                    <ChevronLeft size={24} color="#ffffff" />
                 </TouchableOpacity>
-                <Text className="text-lg font-bold text-slate-900 dark:text-white">Confirmation</Text>
+                <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 20, color: '#ffffff' }}>
+                    Confirmation
+                </Text>
             </View>
 
-            <ScrollView contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+            <ScrollView
+                contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 28, paddingBottom: 20 }}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
 
-                <View className="flex-1 items-center justify-center -mt-10">
-                    <Text className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-6">
-                        Montant à envoyer
-                    </Text>
+                    {/* Amount display */}
+                    <View style={{ zIndex: 1, alignItems: 'center', marginBottom: 4, marginTop: 4 }}>
+                        <Text style={{
+                            fontFamily: 'Outfit_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.55)',
+                            textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12,
+                        }}>
+                            {includeFees ? 'Montant reçu (net)' : 'Montant à envoyer'}
+                        </Text>
 
-                    <View className="items-center">
-                        <Text className={clsx("text-[3.5rem] font-bold tracking-tight text-[#F59E0B] leading-none text-center", isLoading && "opacity-50")}>
-                            {isLoading ? "..." : Number(numericAmount || 0).toLocaleString('fr-FR')}
-                        </Text>
-                        <Text className="text-2xl font-bold text-slate-300 dark:text-slate-600 mt-2">
-                            FCFA
-                        </Text>
+                        <View style={{ alignItems: 'center' }}>
+                            <Text style={{
+                                fontFamily: 'Outfit_900Black', fontSize: 48, letterSpacing: -1,
+                                color: '#F59E0B', lineHeight: 52, textAlign: 'center',
+                                opacity: isLoading ? 0.45 : 1,
+                            }}>
+                                {isLoading ? "..." : Number(numericAmount || 0).toLocaleString('fr-FR')}
+                            </Text>
+                            <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 18, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
+                                FCFA
+                            </Text>
+                        </View>
+
+                        <View style={{
+                            marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                            backgroundColor: 'rgba(255,255,255,0.1)', paddingVertical: 6, paddingHorizontal: 18,
+                            borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+                        }}>
+                            <Text style={{ fontFamily: 'Outfit_600SemiBold', fontSize: 14, color: 'rgba(255,255,255,0.65)' }}>
+                                ≈ {isLoading ? "..." : euroAmount} €
+                            </Text>
+                        </View>
                     </View>
 
-                    <View className="mt-8 flex-row items-center justify-center gap-2 bg-slate-50 dark:bg-white/5 py-2 px-4 rounded-full">
-                        <Text className="text-base font-medium text-slate-500 dark:text-slate-400">
-                            ≈ {isLoading ? "..." : euroAmount} €
-                        </Text>
-                    </View>
+                    {/* Toggle — inclure les frais dans le montant */}
+                    <TouchableOpacity
+                        onPress={() => handleToggleIncludeFees(!includeFees)}
+                        activeOpacity={0.8}
+                        style={{
+                            marginTop: 16, width: '100%',
+                            flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                            backgroundColor: includeFees ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.06)',
+                            borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12,
+                            borderWidth: 1,
+                            borderColor: includeFees ? 'rgba(16,185,129,0.35)' : 'rgba(255,255,255,0.1)',
+                        }}
+                    >
+                        <View style={{ flex: 1, marginRight: 12 }}>
+                            <Text style={{
+                                fontFamily: 'Outfit_600SemiBold', fontSize: 14,
+                                color: includeFees ? '#10B981' : 'rgba(255,255,255,0.8)',
+                            }}>
+                                Inclure les frais dans le montant
+                            </Text>
+                            <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
+                                {includeFees
+                                    ? `Total à payer : ${Number(getTotalXOF() || 0).toLocaleString('fr-FR')} FCFA`
+                                    : 'Les frais s\'ajouteront au montant saisi'}
+                            </Text>
+                        </View>
+                        <Switch
+                            value={includeFees}
+                            onValueChange={handleToggleIncludeFees}
+                            trackColor={{ false: 'rgba(255,255,255,0.15)', true: '#10B981' }}
+                            thumbColor={includeFees ? '#ffffff' : 'rgba(255,255,255,0.7)'}
+                            ios_backgroundColor="rgba(255,255,255,0.15)"
+                        />
+                    </TouchableOpacity>
 
                     {/* Vitesse de transfert */}
-                    <View className="mt-8 w-full gap-3">
-                        <Text className="text-sm font-semibold text-slate-900 dark:text-white px-2">Vitesse de transfert</Text>
+                    <View style={{ marginTop: 16, width: '100%', gap: 8 }}>
+                        <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 14, color: 'rgba(255,255,255,0.7)', paddingHorizontal: 4, marginBottom: 4 }}>
+                            Vitesse de transfert
+                        </Text>
 
                         <TouchableOpacity
                             onPress={() => setDeliverySpeed('INSTANT')}
-                            className={clsx(
-                                "flex-row items-center justify-between p-4 rounded-2xl border-2 transition-all",
-                                state.deliverySpeed === 'INSTANT'
-                                    ? "bg-[#064E3B]/5 border-[#064E3B] dark:bg-[#F59E0B]/10 dark:border-[#F59E0B]"
-                                    : "bg-white border-slate-100 dark:bg-white/5 dark:border-white/10"
-                            )}
+                            style={{
+                                flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                                padding: 14, borderRadius: 20, borderWidth: 2,
+                                backgroundColor: state.deliverySpeed === 'INSTANT' ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.06)',
+                                borderColor: state.deliverySpeed === 'INSTANT' ? '#F59E0B' : 'rgba(255,255,255,0.12)',
+                            }}
                         >
-                            <View className="flex-row items-center gap-4">
-                                <View className={clsx(
-                                    "p-3 rounded-full",
-                                    state.deliverySpeed === 'INSTANT' ? "bg-[#064E3B]/10 dark:bg-[#F59E0B]/20" : "bg-slate-100 dark:bg-white/10"
-                                )}>
-                                    <Zap size={20} className={state.deliverySpeed === 'INSTANT' ? "text-[#064E3B] dark:text-[#F59E0B]" : "text-slate-500 dark:text-slate-400"} />
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                                <View style={{
+                                    padding: 12, borderRadius: 16,
+                                    backgroundColor: state.deliverySpeed === 'INSTANT' ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.08)',
+                                }}>
+                                    <Zap size={20} color={state.deliverySpeed === 'INSTANT' ? '#F59E0B' : 'rgba(255,255,255,0.45)'} />
                                 </View>
                                 <View>
-                                    <Text className={clsx("font-bold text-base", state.deliverySpeed === 'INSTANT' ? "text-[#064E3B] dark:text-white" : "text-slate-900 dark:text-white")}>Instantané</Text>
-                                    <Text className="text-sm text-slate-500">Arrive en ~30 secondes</Text>
+                                    <Text style={{
+                                        fontFamily: 'Outfit_700Bold', fontSize: 16,
+                                        color: state.deliverySpeed === 'INSTANT' ? '#F59E0B' : '#ffffff',
+                                    }}>Instantané</Text>
+                                    <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>Arrive en ~30 secondes</Text>
                                 </View>
                             </View>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             onPress={() => setDeliverySpeed('STANDARD')}
-                            className={clsx(
-                                "flex-row items-center justify-between p-4 rounded-2xl border-2 transition-all",
-                                state.deliverySpeed === 'STANDARD'
-                                    ? "bg-[#064E3B]/5 border-[#064E3B] dark:bg-[#F59E0B]/10 dark:border-[#F59E0B]"
-                                    : "bg-white border-slate-100 dark:bg-white/5 dark:border-white/10"
-                            )}
+                            style={{
+                                flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                                padding: 14, borderRadius: 20, borderWidth: 2,
+                                backgroundColor: state.deliverySpeed === 'STANDARD' ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.06)',
+                                borderColor: state.deliverySpeed === 'STANDARD' ? '#F59E0B' : 'rgba(255,255,255,0.12)',
+                            }}
                         >
-                            <View className="flex-row items-center gap-4">
-                                <View className={clsx(
-                                    "p-3 rounded-full",
-                                    state.deliverySpeed === 'STANDARD' ? "bg-[#064E3B]/10 dark:bg-[#F59E0B]/20" : "bg-slate-100 dark:bg-white/10"
-                                )}>
-                                    <Clock size={20} className={state.deliverySpeed === 'STANDARD' ? "text-[#064E3B] dark:text-[#F59E0B]" : "text-slate-500 dark:text-slate-400"} />
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                                <View style={{
+                                    padding: 12, borderRadius: 16,
+                                    backgroundColor: state.deliverySpeed === 'STANDARD' ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.08)',
+                                }}>
+                                    <Clock size={20} color={state.deliverySpeed === 'STANDARD' ? '#F59E0B' : 'rgba(255,255,255,0.45)'} />
                                 </View>
                                 <View>
-                                    <Text className={clsx("font-bold text-base", state.deliverySpeed === 'STANDARD' ? "text-[#064E3B] dark:text-white" : "text-slate-900 dark:text-white")}>Standard</Text>
-                                    <Text className="text-sm text-slate-500">Livré sous 1 à 3 jours</Text>
+                                    <Text style={{
+                                        fontFamily: 'Outfit_700Bold', fontSize: 16,
+                                        color: state.deliverySpeed === 'STANDARD' ? '#F59E0B' : '#ffffff',
+                                    }}>Standard</Text>
+                                    <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>Livré sous 1 à 3 jours</Text>
                                 </View>
                             </View>
-                            <Text className={clsx("font-bold text-xs uppercase tracking-wider", state.deliverySpeed === 'STANDARD' ? "text-[#064E3B] dark:text-[#F59E0B]" : "text-slate-500")}>Moins cher</Text>
+                            <Text style={{
+                                fontFamily: 'Outfit_700Bold', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1,
+                                color: state.deliverySpeed === 'STANDARD' ? '#F59E0B' : 'rgba(255,255,255,0.35)',
+                            }}>Moins cher</Text>
                         </TouchableOpacity>
                     </View>
 
-                    <View className="mt-8 w-full bg-slate-50 dark:bg-white/5 rounded-2xl p-6 space-y-4">
-                        <View className="flex-row justify-between items-center pb-4 border-b border-slate-100 dark:border-white/10">
-                            <Text className="text-slate-500 dark:text-slate-400">Montant net envoyé</Text>
-                            <Text className="font-bold text-slate-900 dark:text-white">
-                                {isLoading ? "..." : Number(state.quote?.baseAmountCfa || 0).toLocaleString('fr-FR')} FCFA
-                            </Text>
-                        </View>
-                        <View className="flex-row justify-between items-center pb-4 border-b border-slate-100 dark:border-white/10">
-                            <Text className="text-slate-500 dark:text-slate-400">Frais réseau partenaires</Text>
-                            <Text className="font-bold text-slate-900 dark:text-white">
-                                {isLoading ? "..." : Number(state.quote?.partnerFeesCfa || 0).toLocaleString('fr-FR')} FCFA
-                            </Text>
-                        </View>
-                        <View className="flex-row justify-between items-center pb-4 border-b border-slate-100 dark:border-white/10">
-                            <Text className="text-slate-500 dark:text-slate-400">Frais WURA</Text>
-                            <Text className="font-bold text-slate-900 dark:text-white">
-                                {isLoading ? "..." : Number(state.quote?.wuraFeesCfa || 0).toLocaleString('fr-FR')} FCFA
-                            </Text>
-                        </View>
+                    {/* Fees breakdown card */}
+                    <View style={{
+                        marginTop: 14, width: '100%',
+                        backgroundColor: 'rgba(255,255,255,0.07)',
+                        borderRadius: 20, padding: 16,
+                        borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+                    }}>
+                        {/* Frais de service fixes (petits montants < 30k CFA) */}
+                        {!isLoading && (state.quote?.fixedFeesCfa ?? 0) > 0 && (
+                            <View style={{
+                                flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                                backgroundColor: 'rgba(245,158,11,0.12)', borderRadius: 12,
+                                paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12,
+                                borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)',
+                            }}>
+                                <View style={{ flex: 1, marginRight: 8 }}>
+                                    <Text style={{ fontFamily: 'Outfit_600SemiBold', fontSize: 13, color: '#F59E0B' }}>Frais de service</Text>
+                                    <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+                                        Appliqués aux petits montants pour couvrir les frais bancaires fixes
+                                    </Text>
+                                </View>
+                                <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 14, color: '#F59E0B' }}>
+                                    +{Number(state.quote?.fixedFeesCfa || 0).toLocaleString('fr-FR')} FCFA
+                                </Text>
+                            </View>
+                        )}
 
-                        <View className="flex-row justify-between items-center">
-                            <Text className="text-slate-500 dark:text-slate-400">Total à payer</Text>
-                            <Text className="font-bold text-emerald-600 dark:text-emerald-400 text-lg">
-                                {isLoading ? "..." : Number(getTotalXOF() || 0).toLocaleString('fr-FR')} FCFA
+                        {[
+                            { label: 'Montant net envoyé', value: `${Number(state.quote?.baseAmountCfa || 0).toLocaleString('fr-FR')} FCFA` },
+                            { label: 'Frais réseau partenaires', value: `${Number(state.quote?.partnerFeesCfa || 0).toLocaleString('fr-FR')} FCFA` },
+                            { label: 'Frais WURA', value: `${Number(state.quote?.wuraFeesCfa || 0).toLocaleString('fr-FR')} FCFA` },
+                        ].map((row) => (
+                            <View key={row.label} style={{
+                                flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                                paddingBottom: 10, marginBottom: 10,
+                                borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)',
+                            }}>
+                                <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>{row.label}</Text>
+                                <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 14, color: '#ffffff' }}>
+                                    {isLoading ? "..." : row.value}
+                                </Text>
+                            </View>
+                        ))}
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={{ fontFamily: 'Outfit_600SemiBold', fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>Total à payer</Text>
+                            <Text style={{ fontFamily: 'Outfit_900Black', fontSize: 18, color: '#F59E0B' }}>
+                                {isLoading ? "..." : `${Number(getTotalXOF() || 0).toLocaleString('fr-FR')} FCFA`}
                             </Text>
                         </View>
                     </View>
                 </View>
 
                 {/* Bottom Action */}
-                <View className="mt-auto pt-8 mb-8">
-                    <TouchableOpacity
+                <View style={{ marginTop: 'auto', paddingTop: 12, marginBottom: 12 }}>
+                    <AnimatedPressable
                         onPress={handleConfirm}
-                        className="w-full bg-[#064E3B] py-5 rounded-full shadow-lg shadow-emerald-900/20 flex-row items-center justify-center gap-3 active:scale-[0.98]"
+                        style={{
+                            width: '100%', backgroundColor: '#064E3B', paddingVertical: 18,
+                            borderRadius: 999, alignItems: 'center', justifyContent: 'center',
+                            shadowColor: '#00F5A0', shadowOffset: { width: 0, height: 8 },
+                            shadowOpacity: 0.35, shadowRadius: 24, elevation: 10,
+                        }}
                     >
-                        <Text className="text-white font-bold text-xl">Confirmer le montant</Text>
-                        <ArrowRight size={24} color="white" />
-                    </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                            <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 20, color: '#ffffff' }}>Confirmer le montant</Text>
+                            <ArrowRight size={22} color="white" />
+                        </View>
+                    </AnimatedPressable>
                 </View>
 
             </ScrollView>

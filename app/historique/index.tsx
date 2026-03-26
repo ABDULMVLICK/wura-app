@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { ArrowDownLeft, Clock, RefreshCw } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomTabBar } from "../../components/BottomTabBar";
 import { useReceiver } from "../../contexts/ReceiverContext";
@@ -17,96 +17,173 @@ export default function HistoriqueScreen() {
         setRefreshing(false);
     };
 
+    const getStatusInfo = (status: string) => {
+        switch (status) {
+            case 'COMPLETED': return { label: 'Terminé', bgColor: '#ECFDF5', textColor: '#059669', dotColor: '#10B981' };
+            case 'WAITING_USER_OFFRAMP': return { label: 'À retirer', bgColor: '#FFF7ED', textColor: '#EA580C', dotColor: '#F97316' };
+            case 'BRIDGE_PROCESSING':
+            case 'PAYIN_PENDING': return { label: 'En cours', bgColor: 'rgba(245,158,11,0.15)', textColor: '#F59E0B', dotColor: '#F59E0B' };
+            case 'INITIATED': return { label: 'Initié', bgColor: '#EFF6FF', textColor: '#2563EB', dotColor: '#3B82F6' };
+            default: return { label: status, bgColor: 'rgba(255,255,255,0.1)', textColor: '#9CA3AF', dotColor: '#9CA3AF' };
+        }
+    };
+
     return (
-        <SafeAreaView className="flex-1 bg-background">
-            <View className="flex-1">
-                <ScrollView contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}>
-                    <View className="px-5 pt-8 pb-4">
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#14533d' }}>
+            <View style={{ flex: 1 }}>
+                <ScrollView contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+                    <View style={{ paddingHorizontal: 20, paddingTop: 28, paddingBottom: 16 }}>
                         {/* Header */}
-                        <View className="mb-6 flex-row items-center justify-between">
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
                             <View>
-                                <Text className="text-2xl font-bold text-foreground">Historique</Text>
-                                <Text className="text-sm text-muted-foreground">Vos transactions récentes</Text>
+                                <Text style={{ fontFamily: 'Outfit_900Black', fontSize: 28, color: '#F59E0B' }}>Historique</Text>
+                                <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
+                                    Vos transactions récentes
+                                </Text>
                             </View>
                             <TouchableOpacity
                                 onPress={handleRefresh}
                                 disabled={refreshing}
-                                className="flex h-10 w-10 items-center justify-center rounded-full bg-muted"
+                                style={{
+                                    width: 42, height: 42, borderRadius: 21,
+                                    backgroundColor: 'rgba(255,255,255,0.12)',
+                                    alignItems: 'center', justifyContent: 'center',
+                                }}
+                                activeOpacity={0.7}
                             >
                                 {refreshing ? (
-                                    <ActivityIndicator size="small" color="#0f3d2e" />
+                                    <ActivityIndicator size="small" color="#F59E0B" />
                                 ) : (
-                                    <RefreshCw size={18} color="#6b7280" />
+                                    <RefreshCw size={18} color="rgba(255,255,255,0.7)" />
                                 )}
                             </TouchableOpacity>
                         </View>
 
                         {/* Transaction List */}
-                        {state.isLoading ? (
-                            <View className="flex-1 items-center justify-center py-20">
-                                <ActivityIndicator size="large" color="#0f3d2e" />
-                                <Text className="mt-4 text-sm text-muted-foreground">Chargement...</Text>
+                        {state.isLoading && state.recentTransactions.length === 0 ? (
+                            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 }}>
+                                <View style={{
+                                    width: 80, height: 80, borderRadius: 40,
+                                    backgroundColor: 'rgba(245,158,11,0.15)',
+                                    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+                                }}>
+                                    <ActivityIndicator size="large" color="#F59E0B" />
+                                </View>
+                                <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 14, color: 'rgba(255,255,255,0.5)' }}>
+                                    Chargement...
+                                </Text>
                             </View>
                         ) : state.recentTransactions.length === 0 ? (
-                            <View className="flex-1 items-center justify-center py-20">
-                                <View className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-                                    <Clock size={36} color="#9ca3af" />
+                            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 }}>
+                                <View style={{
+                                    width: 80, height: 80, borderRadius: 40,
+                                    backgroundColor: 'rgba(255,255,255,0.08)',
+                                    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+                                }}>
+                                    <Clock size={36} color="rgba(255,255,255,0.3)" />
                                 </View>
-                                <Text className="text-lg font-semibold text-foreground">Aucune transaction</Text>
-                                <Text className="mt-2 text-sm text-muted-foreground text-center max-w-[250px]">
+                                <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 18, color: '#ffffff', marginBottom: 8 }}>
+                                    Aucune transaction
+                                </Text>
+                                <Text style={{
+                                    fontFamily: 'Outfit_400Regular', fontSize: 14,
+                                    color: 'rgba(255,255,255,0.45)', textAlign: 'center', lineHeight: 20, maxWidth: 260,
+                                }}>
                                     Vos transactions apparaîtront ici une fois que vous aurez reçu de l'argent.
                                 </Text>
                             </View>
                         ) : (
-                            <View className="flex-col gap-3">
+                            <View style={{
+                                backgroundColor: '#ffffff', borderRadius: 24,
+                                overflow: 'hidden',
+                                ...Platform.select({
+                                    android: { elevation: 4 },
+                                    ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 16 },
+                                }),
+                            }}>
                                 {state.recentTransactions.map((tx, index) => {
-                                    const isReceived = true; // All receiver transactions are received
                                     const initial = (tx.senderName || "W").charAt(0).toUpperCase();
+                                    const statusInfo = getStatusInfo(tx.status);
+                                    const isLast = index === state.recentTransactions.length - 1;
 
                                     return (
-                                        <View
+                                        <TouchableOpacity
                                             key={tx.id || index}
-                                            className="flex-row items-center justify-between rounded-2xl bg-card p-4 border border-border/50"
+                                            onPress={() => router.push({
+                                                pathname: "/transaction-details",
+                                                params: { id: tx.id },
+                                            })}
+                                            activeOpacity={0.6}
+                                            style={[
+                                                {
+                                                    flexDirection: 'row', alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    paddingHorizontal: 18, paddingVertical: 16,
+                                                },
+                                                !isLast && {
+                                                    borderBottomWidth: StyleSheet.hairlineWidth,
+                                                    borderBottomColor: '#F3F4F6',
+                                                }
+                                            ]}
                                         >
-                                            <View className="flex-row items-center gap-3">
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 }}>
                                                 {/* Initial Avatar */}
-                                                <View className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
-                                                    <Text className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                                                <View style={{
+                                                    width: 48, height: 48, borderRadius: 24,
+                                                    backgroundColor: '#D1FAE5',
+                                                    alignItems: 'center', justifyContent: 'center',
+                                                }}>
+                                                    <Text style={{
+                                                        fontFamily: 'Outfit_700Bold', fontSize: 17, color: '#059669',
+                                                    }}>
                                                         {initial}
                                                     </Text>
                                                 </View>
-                                                <View className="flex-col">
-                                                    <Text className="text-sm font-semibold text-foreground">
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={{
+                                                        fontFamily: 'Outfit_600SemiBold', fontSize: 15, color: '#111827', marginBottom: 3,
+                                                    }}>
                                                         {tx.senderName || "Utilisateur Wura"}
                                                     </Text>
-                                                    <Text className="text-xs text-muted-foreground">
+                                                    <Text style={{
+                                                        fontFamily: 'Outfit_400Regular', fontSize: 12, color: '#9CA3AF', marginBottom: 5,
+                                                    }}>
                                                         {new Date(tx.date).toLocaleDateString('fr-FR', {
                                                             day: 'numeric',
                                                             month: 'long',
                                                             year: 'numeric'
                                                         })}
                                                     </Text>
-                                                    <View className="mt-1 flex-row items-center gap-1">
-                                                        <View className={`h-1.5 w-1.5 rounded-full ${tx.status === 'COMPLETED' ? 'bg-emerald-500' :
-                                                                tx.status === 'WAITING_USER_OFFRAMP' || tx.status === 'BRIDGE_PROCESSING' || tx.status === 'PAYIN_PENDING' ? 'bg-yellow-500' :
-                                                                    tx.status === 'INITIATED' ? 'bg-blue-500' : 'bg-gray-400'
-                                                            }`} />
-                                                        <Text className="text-[10px] text-muted-foreground uppercase">
-                                                            {tx.status === 'COMPLETED' ? 'Terminé' :
-                                                                tx.status === 'WAITING_USER_OFFRAMP' ? 'À retirer' :
-                                                                    tx.status === 'BRIDGE_PROCESSING' || tx.status === 'PAYIN_PENDING' ? 'En cours' :
-                                                                        tx.status === 'INITIATED' ? 'Initié' : tx.status}
+                                                    {/* Status Badge */}
+                                                    <View style={{
+                                                        flexDirection: 'row', alignItems: 'center',
+                                                        alignSelf: 'flex-start',
+                                                        paddingHorizontal: 10, paddingVertical: 4,
+                                                        borderRadius: 12, gap: 5,
+                                                        backgroundColor: statusInfo.bgColor,
+                                                    }}>
+                                                        <View style={{
+                                                            width: 5, height: 5, borderRadius: 2.5,
+                                                            backgroundColor: statusInfo.dotColor,
+                                                        }} />
+                                                        <Text style={{
+                                                            fontFamily: 'Outfit_600SemiBold', fontSize: 10,
+                                                            color: statusInfo.textColor, textTransform: 'uppercase',
+                                                        }}>
+                                                            {statusInfo.label}
                                                         </Text>
                                                     </View>
                                                 </View>
                                             </View>
-                                            <View className="items-end">
-                                                <Text className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                                            <View style={{ alignItems: 'flex-end' }}>
+                                                <Text style={{
+                                                    fontFamily: 'Outfit_700Bold', fontSize: 15, color: '#059669',
+                                                }}>
                                                     + {Number(tx.amountEUR || 0).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
                                                 </Text>
-                                                <ArrowDownLeft size={14} color="#059669" className="mt-1" />
+                                                <ArrowDownLeft size={14} color="#059669" style={{ marginTop: 4 }} />
                                             </View>
-                                        </View>
+                                        </TouchableOpacity>
                                     );
                                 })}
                             </View>

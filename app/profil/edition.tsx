@@ -1,14 +1,31 @@
 import { useRouter } from "expo-router";
-import { ArrowLeft, Check, Mail, MapPin, Phone, User } from "lucide-react-native";
+import { Anchor, ArrowLeft, Award, Check, Compass, Globe, Heart, Leaf, Mail, MapPin, Phone, Smile, Star, Sun, User, Zap } from "lucide-react-native";
 import { useState } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { updateUserProfile, useAuth } from "../../contexts/AuthContext";
 
+const AVATAR_ICONS = [Smile, Star, Zap, Sun, Leaf, Globe, Heart, Anchor, Award, Compass];
+const AVATAR_PALETTES = [
+    { bg: '#FEF3C7', color: '#D97706' },
+    { bg: '#D1FAE5', color: '#059669' },
+    { bg: '#DBEAFE', color: '#2563EB' },
+    { bg: '#FCE7F3', color: '#DB2777' },
+    { bg: '#EDE9FE', color: '#7C3AED' },
+    { bg: '#FEE2E2', color: '#DC2626' },
+    { bg: '#E0F2FE', color: '#0284C7' },
+];
+
+function getAvatar(seed: string) {
+    const n = (seed || 'U').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    return { Icon: AVATAR_ICONS[n % AVATAR_ICONS.length], ...AVATAR_PALETTES[n % AVATAR_PALETTES.length] };
+}
+
 export default function EditProfileScreen() {
     const router = useRouter();
 
     const { user, profile, refreshProfile } = useAuth();
+    const avatar = getAvatar(user?.uid || profile?.email || 'U');
     const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -47,26 +64,29 @@ export default function EditProfileScreen() {
             >
                 <View className="flex-1">
                     {/* Header */}
-                    <View className="px-6 py-4 flex-row items-center justify-between border-b border-border/40">
+                    <View className="px-7 py-5 flex-row items-center justify-between border-b border-border/40">
                         <TouchableOpacity
                             onPress={() => router.back()}
-                            className="h-10 w-10 items-center justify-center rounded-full bg-muted"
+                            className="h-11 w-11 items-center justify-center rounded-2xl bg-muted"
+                            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 }}
                         >
                             <ArrowLeft size={20} className="text-foreground" color="#000" />
                         </TouchableOpacity>
-                        <Text className="text-lg font-bold text-foreground">Modifier le profil</Text>
-                        <View className="w-10" />
+                        <Text className="text-xl font-bold text-foreground">Modifier le profil</Text>
+                        <View className="w-11" />
                     </View>
 
-                    <ScrollView contentContainerStyle={{ paddingBottom: 40 }} className="flex-1 px-6 pt-6">
-                        {/* Avatar Edit */}
+                    <ScrollView contentContainerStyle={{ paddingBottom: 40 }} className="flex-1 px-7 pt-6">
+                        {/* Avatar */}
                         <View className="items-center mb-8">
-                            <View className="relative">
-                                <View className="h-28 w-28 rounded-full bg-[#F59E0B]/20 items-center justify-center border-4 border-card shadow-sm">
-                                    <Text className="text-5xl font-bold text-[#F59E0B]">
-                                        {(profile?.email || profile?.prenom || "U").charAt(0).toUpperCase()}
-                                    </Text>
-                                </View>
+                            <View style={{
+                                width: 120, height: 120, borderRadius: 60,
+                                backgroundColor: avatar.bg,
+                                alignItems: 'center', justifyContent: 'center',
+                                borderWidth: 4, borderColor: 'rgba(255,255,255,0.2)',
+                                shadowColor: avatar.color, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 5,
+                            }}>
+                                <avatar.Icon size={52} color={avatar.color} />
                             </View>
                         </View>
 
@@ -149,12 +169,13 @@ export default function EditProfileScreen() {
                     </ScrollView>
 
                     {/* Save Button */}
-                    <View className="p-6 bg-background border-t border-border/40">
+                    <View className="p-7 bg-background border-t border-border/40">
                         <TouchableOpacity
                             onPress={handleSave}
-                            className="w-full bg-primary py-4 rounded-2xl items-center justify-center flex-row shadow-lg shadow-primary/20 active:scale-[0.98]"
+                            className="w-full bg-primary py-5 rounded-full items-center justify-center flex-row active:scale-[0.98]"
+                            style={{ shadowColor: '#064E3B', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 6 }}
                         >
-                            <Check size={20} color="white" className="mr-2" />
+                            <Check size={22} color="white" className="mr-2" />
                             {loading ? (
                                 <ActivityIndicator color="white" />
                             ) : (

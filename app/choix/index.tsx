@@ -1,69 +1,127 @@
 import { useRouter } from "expo-router";
 import { ArrowRight, Download, Send } from "lucide-react-native";
-import { useColorScheme } from "nativewind";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Image, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "../../components/AnimatedPressable";
+import { FadeInView } from "../../components/FadeInView";
 
 export default function ChoiceScreen() {
     const router = useRouter();
-    const { colorScheme } = useColorScheme();
-    const isDark = colorScheme === "dark";
 
     return (
-        <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-background">
-            <View className="flex-1 items-center justify-center px-6">
-                {/* Logo */}
-                <View className="mb-4 items-center">
+        <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: '#14533d' }}>
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+
+                {/* Logo + Subtitle */}
+                <FadeInView delay={0} style={{ alignItems: 'center', marginBottom: 48 }}>
                     <Image
-                        source={isDark ? require("../../assets/images/wuraa-removebg-logoVersionDark.png") : require("../../assets/images/wuralogo-removebg-preview.png")}
-                        style={{ width: 280, height: 80 }}
+                        source={require("../../assets/images/wuraa-removebg-logoVersionDark.png")}
+                        style={{ width: 400, height: 130 }}
                         resizeMode="contain"
                     />
-                    <Text className="mt-4 text-sm text-muted-foreground text-center">
+                    <Text style={{
+                        fontFamily: 'Outfit_400Regular', fontSize: 15,
+                        color: 'rgba(255,255,255,0.55)', marginTop: 16,
+                        textAlign: 'center',
+                    }}>
                         Que souhaitez-vous faire ?
                     </Text>
-                </View>
+                </FadeInView>
 
                 {/* Choice Cards */}
-                <View className="w-full max-w-sm flex-col gap-4">
+                <View style={{ width: '100%', maxWidth: 380 }}>
+
                     {/* Choice 1: Send from Africa */}
-                    <TouchableOpacity
-                        onPress={() => router.push("/inscription-sender")}
-                        className="w-full flex-row items-center gap-4 rounded-2xl border-2 border-[#064E3B] bg-[#064E3B]/5 p-5 active:opacity-80"
-                    >
-                        <View className="flex h-14 w-14 items-center justify-center rounded-full bg-[#064E3B]">
-                            <Send size={24} color="white" />
-                        </View>
-                        <View className="flex-1 flex-col gap-1">
-                            <Text className="text-base font-bold text-foreground">
-                                Envoyer depuis l'Afrique
-                            </Text>
-                            <Text className="text-xs text-muted-foreground">
-                                Envoyez de l'argent vers l'Europe rapidement
-                            </Text>
-                        </View>
-                        <ArrowRight size={20} color="#064E3B" />
-                    </TouchableOpacity>
+                    <FadeInView delay={200} style={{ marginBottom: 16 }}>
+                        <AnimatedPressable
+                            onPress={() => router.push("/inscription-sender")}
+                            style={{
+                                backgroundColor: 'rgba(255,255,255,0.1)',
+                                borderRadius: 24, padding: 20,
+                                borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+                            }}
+                        >
+                            {/* Row: Icon left + Content right */}
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{
+                                    width: 52, height: 52, borderRadius: 16,
+                                    backgroundColor: '#064E3B',
+                                    alignItems: 'center', justifyContent: 'center',
+                                    marginRight: 16,
+                                }}>
+                                    <Send size={22} color="white" />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <Text style={{
+                                            fontFamily: 'Outfit_700Bold', fontSize: 16, color: '#ffffff',
+                                            flex: 1,
+                                        }}>
+                                            Envoyer depuis l'Afrique
+                                        </Text>
+                                        <ArrowRight size={18} color="rgba(255,255,255,0.6)" style={{ marginLeft: 8 }} />
+                                    </View>
+                                    <Text style={{
+                                        fontFamily: 'Outfit_400Regular', fontSize: 13,
+                                        color: 'rgba(255,255,255,0.5)', marginTop: 4,
+                                    }}>
+                                        Envoyez de l'argent vers l'Europe
+                                    </Text>
+                                </View>
+                            </View>
+                        </AnimatedPressable>
+                    </FadeInView>
 
                     {/* Choice 2: Receive in Europe */}
-                    <TouchableOpacity
-                        onPress={() => router.push("/inscription-receiver")}
-                        className="w-full flex-row items-center gap-4 rounded-2xl border-2 border-[#F59E0B] bg-[#F59E0B]/5 p-5 active:opacity-80"
-                    >
-                        <View className="flex h-14 w-14 items-center justify-center rounded-full bg-[#F59E0B]">
-                            <Download size={24} color="white" />
-                        </View>
-                        <View className="flex-1 flex-col gap-1">
-                            <Text className="text-base font-bold text-foreground">
-                                Recevoir en Europe
-                            </Text>
-                            <Text className="text-xs text-muted-foreground">
-                                Recevez de l'argent depuis l'Afrique
-                            </Text>
-                        </View>
-                        <ArrowRight size={20} color="#F59E0B" />
-                    </TouchableOpacity>
+                    <FadeInView delay={350}>
+                        <AnimatedPressable
+                            onPress={() => router.push("/inscription-receiver")}
+                            style={{
+                                backgroundColor: 'rgba(255,255,255,0.1)',
+                                borderRadius: 24, padding: 20,
+                                borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)',
+                            }}
+                        >
+                            {/* Row: Icon left + Content right */}
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{
+                                    width: 52, height: 52, borderRadius: 16,
+                                    backgroundColor: '#F59E0B',
+                                    alignItems: 'center', justifyContent: 'center',
+                                    marginRight: 16,
+                                }}>
+                                    <Download size={22} color="white" />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <Text style={{
+                                            fontFamily: 'Outfit_700Bold', fontSize: 16, color: '#ffffff',
+                                            flex: 1,
+                                        }}>
+                                            Recevoir en Europe
+                                        </Text>
+                                        <ArrowRight size={18} color="rgba(245,158,11,0.7)" style={{ marginLeft: 8 }} />
+                                    </View>
+                                    <Text style={{
+                                        fontFamily: 'Outfit_400Regular', fontSize: 13,
+                                        color: 'rgba(255,255,255,0.5)', marginTop: 4,
+                                    }}>
+                                        Recevez de l'argent depuis l'Afrique
+                                    </Text>
+                                </View>
+                            </View>
+                        </AnimatedPressable>
+                    </FadeInView>
                 </View>
+
+                {/* Bottom tagline */}
+                <Text style={{
+                    position: 'absolute', bottom: 24,
+                    fontFamily: 'Outfit_400Regular', fontSize: 12,
+                    color: 'rgba(255,255,255,0.25)', letterSpacing: 0.5,
+                }}>
+                    Sécurisé • Rapide • Sans frontières
+                </Text>
             </View>
         </SafeAreaView>
     );

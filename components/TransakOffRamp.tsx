@@ -19,7 +19,7 @@ import { TransferService } from '../services/transfers';
 // Constants (internes — jamais affichées à l'utilisateur)
 // ---------------------------------------------------------------------------
 
-const TRANSAK_BASE_URL = 'https://global-stg.transak.com';
+const TRANSAK_BASE_URL = 'https://global.transak.com';
 const TRANSAK_API_KEY = process.env.EXPO_PUBLIC_TRANSAK_API_KEY ?? '';
 
 const USDT_ADDRESS_POLYGON = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
@@ -47,7 +47,7 @@ function buildTransakUrl(
 ): string {
     const params = new URLSearchParams({
         apiKey: TRANSAK_API_KEY,
-        environment: 'STAGING',
+        environment: 'PRODUCTION',
         productsAvailed: 'SELL',
         cryptoCurrencyCode: 'USDT',
         network: 'polygon',

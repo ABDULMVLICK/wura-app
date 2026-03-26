@@ -1,16 +1,30 @@
 import { useRouter } from "expo-router";
-import { Bell, ChevronRight, CreditCard, Edit2, LogOut, Moon, Settings, Shield, Sun, User } from "lucide-react-native";
-import { useColorScheme } from "nativewind";
-import { ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
+import { Anchor, Award, Bell, CheckCircle, ChevronRight, Compass, CreditCard, Edit2, Globe, Heart, HelpCircle, Leaf, LogOut, Settings, Shield, Smile, Star, Sun, User, Zap } from "lucide-react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BottomTabBar } from "../../components/BottomTabBar";
 import { useAuth } from "../../contexts/AuthContext";
 
+const AVATAR_ICONS = [Smile, Star, Zap, Sun, Leaf, Globe, Heart, Anchor, Award, Compass];
+const AVATAR_PALETTES = [
+    { bg: '#FEF3C7', color: '#D97706' },
+    { bg: '#D1FAE5', color: '#059669' },
+    { bg: '#DBEAFE', color: '#2563EB' },
+    { bg: '#FCE7F3', color: '#DB2777' },
+    { bg: '#EDE9FE', color: '#7C3AED' },
+    { bg: '#FEE2E2', color: '#DC2626' },
+    { bg: '#E0F2FE', color: '#0284C7' },
+];
+
+function getAvatar(seed: string) {
+    const n = (seed || 'U').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    return { Icon: AVATAR_ICONS[n % AVATAR_ICONS.length], ...AVATAR_PALETTES[n % AVATAR_PALETTES.length] };
+}
+
 export default function ProfileScreen() {
     const router = useRouter();
-    const { colorScheme, toggleColorScheme } = useColorScheme();
-    const isDark = colorScheme === "dark";
-    const { signOut, profile } = useAuth();
+    const { signOut, profile, user } = useAuth();
+    const avatar = getAvatar(user?.uid || profile?.email || 'U');
 
     const menuItems = [
         {
@@ -42,6 +56,12 @@ export default function ProfileScreen() {
             label: "Paramètres de l'application",
             route: "/profil/parametres",
             color: "#6B7280"
+        },
+        {
+            icon: HelpCircle,
+            label: "Aide et support",
+            route: "/profil/support",
+            color: "#F59E0B"
         }
     ];
 
@@ -55,19 +75,23 @@ export default function ProfileScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-background dark:bg-slate-950">
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#14533d' }}>
             <View className="flex-1">
                 <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-                    <View className="px-6 pt-8 pb-4">
-                        <Text className="text-3xl font-bold text-foreground dark:text-white mb-6">Mon Profil</Text>
+                    <View className="px-7 pt-8 pb-4">
+                        <Text style={{ fontFamily: 'Outfit_900Black', fontSize: 30, color: '#F59E0B', marginBottom: 32 }}>Mon Profil</Text>
 
                         {/* Profile Card */}
-                        <View className="items-center mb-8">
-                            <View className="relative mb-4">
-                                <View className="h-28 w-28 rounded-full bg-[#F59E0B]/20 items-center justify-center border-4 border-card shadow-sm">
-                                    <Text className="text-5xl font-bold text-[#F59E0B]">
-                                        {(profile?.email || profile?.prenom || "U").charAt(0).toUpperCase()}
-                                    </Text>
+                        <View className="items-center mb-10">
+                            <View className="relative mb-5">
+                                <View style={{
+                                    width: 120, height: 120, borderRadius: 60,
+                                    backgroundColor: avatar.bg,
+                                    alignItems: 'center', justifyContent: 'center',
+                                    borderWidth: 4, borderColor: 'rgba(255,255,255,0.2)',
+                                    shadowColor: avatar.color, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 5,
+                                }}>
+                                    <avatar.Icon size={52} color={avatar.color} />
                                 </View>
                                 <TouchableOpacity
                                     onPress={() => router.push("/profil/edition")}
@@ -76,76 +100,53 @@ export default function ProfileScreen() {
                                     <Edit2 size={14} color="white" />
                                 </TouchableOpacity>
                             </View>
-                            <Text className="text-xl font-bold text-foreground dark:text-white">
+                            <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 22, color: '#ffffff' }}>
                                 {profile?.prenom} {profile?.nom}
                             </Text>
-                            <Text className="text-sm text-muted-foreground dark:text-slate-400">
+                            <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 6 }}>
                                 {profile?.email || profile?.telephone}
                             </Text>
-                            <View className="mt-2 px-3 py-1 rounded-full bg-primary/10">
-                                <Text className="text-xs font-medium text-primary">Compte Vérifié</Text>
+                            <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: '#10B981' }}>
+                                <CheckCircle size={13} color="#ffffff" />
+                                <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 12, color: '#ffffff' }}>Compte Vérifié</Text>
                             </View>
                         </View>
 
                         {/* Menu Items */}
-                        <View className="bg-card dark:bg-slate-900 rounded-3xl p-2 shadow-sm border border-border dark:border-slate-800 mb-6">
+                        <View style={{ backgroundColor: '#ffffff', borderRadius: 28, padding: 12, marginBottom: 32, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 4 }}>
                             {menuItems.map((item, index) => (
                                 <TouchableOpacity
                                     key={index}
-                                    onPress={() => item.route === "/profil/edition" ? router.push("/profil/edition") : null}
-                                    className={`flex-row items-center justify-between p-4 ${index !== menuItems.length - 1 ? 'border-b border-border/50' : ''}`}
+                                    onPress={() => item.route ? router.push(item.route as any) : null}
+                                    className={`flex-row items-center justify-between p-4 rounded-2xl ${index !== menuItems.length - 1 ? 'mb-1' : ''} active:bg-gray-50`}
                                 >
                                     <View className="flex-row items-center gap-4">
-                                        <View className={`h-10 w-10 rounded-xl items-center justify-center bg-gray-50 dark:bg-slate-800`}>
+                                        <View className="h-11 w-11 rounded-2xl items-center justify-center bg-gray-50">
                                             <item.icon size={20} color={item.color} />
                                         </View>
-                                        <Text className="text-base font-medium text-foreground dark:text-white">{item.label}</Text>
+                                        <Text className="text-base font-semibold text-foreground">{item.label}</Text>
                                     </View>
-                                    <ChevronRight size={20} className="text-muted-foreground dark:text-slate-500 opacity-50" />
+                                    <ChevronRight size={20} className="text-muted-foreground opacity-50" />
                                 </TouchableOpacity>
                             ))}
-                        </View>
-
-                        {/* Dark Mode Toggle */}
-                        <View className="bg-card dark:bg-slate-900 rounded-3xl p-2 shadow-sm border border-border dark:border-slate-800 mb-6">
-                            <View className="flex-row items-center justify-between p-4">
-                                <View className="flex-row items-center gap-4">
-                                    <View className="h-10 w-10 rounded-xl items-center justify-center bg-gray-50 dark:bg-slate-800">
-                                        {isDark ? (
-                                            <Moon size={20} color="#8B5CF6" />
-                                        ) : (
-                                            <Sun size={20} color="#F59E0B" />
-                                        )}
-                                    </View>
-                                    <Text className="text-base font-medium text-foreground dark:text-white">
-                                        Mode sombre
-                                    </Text>
-                                </View>
-                                <Switch
-                                    value={isDark}
-                                    onValueChange={toggleColorScheme}
-                                    trackColor={{ false: "#E5E7EB", true: "#064E3B" }}
-                                    thumbColor={isDark ? "#10B981" : "#f4f3f4"}
-                                />
-                            </View>
                         </View>
 
                         {/* Logout Button */}
                         <TouchableOpacity
                             onPress={handleLogout}
-                            className="flex-row items-center justify-center gap-2 p-4 rounded-2xl bg-red-50 dark:bg-red-900/10 active:opacity-80"
+                            className="flex-row items-center justify-center gap-3 p-5 rounded-3xl bg-red-50 active:opacity-80"
                         >
                             <LogOut size={20} className="text-red-500" />
-                            <Text className="text-base font-semibold text-red-500">Se déconnecter</Text>
+                            <Text className="text-base font-bold text-red-500">Se déconnecter</Text>
                         </TouchableOpacity>
 
                         <Text className="text-center text-xs text-muted-foreground mt-8 opacity-50">
                             Version 1.0.0 • Wura App
                         </Text>
                     </View>
-                </ScrollView>
+                </ScrollView >
                 <BottomTabBar />
-            </View>
-        </SafeAreaView>
+            </View >
+        </SafeAreaView >
     );
 }

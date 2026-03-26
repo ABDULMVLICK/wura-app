@@ -2,6 +2,8 @@ import { useRouter } from "expo-router";
 import { ArrowRight, ChevronLeft, Link, MoreHorizontal, ShieldCheck, User } from "lucide-react-native";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnimatedPressable } from "../../components/AnimatedPressable";
+import { SenderGradient } from "../../components/SenderGradient";
 import { useTransfer } from "../../contexts/TransferContext";
 
 export default function ConfirmationBeneficiaryScreen() {
@@ -22,72 +24,136 @@ export default function ConfirmationBeneficiaryScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-[#f8f7f5] dark:bg-[#221b10]">
-            <View className="flex-1">
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#14533d' }}>
+            {/* Gradient animé — identité sender */}
+            <SenderGradient heightRatio={0.45} />
 
+            <View style={{ flex: 1, zIndex: 1 }}>
                 {/* Navigation Header */}
-                <View className="px-6 py-2 flex-row items-center justify-between">
+                <View style={{
+                    paddingHorizontal: 24, paddingVertical: 8,
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                }}>
                     <TouchableOpacity
                         onPress={() => router.back()}
-                        className="p-2 -ml-2 rounded-full active:bg-gray-100 dark:active:bg-[#3A3124]"
+                        style={{
+                            padding: 8, marginLeft: -8, borderRadius: 999,
+                            backgroundColor: 'rgba(255,255,255,0.1)',
+                        }}
                     >
-                        <ChevronLeft size={24} color="#1f2937" />
+                        <ChevronLeft size={24} color="#ffffff" />
                     </TouchableOpacity>
-                    <Text className="text-xs font-medium tracking-widest text-[#F59E0B] uppercase">Nouvel Envoi</Text>
-                    <TouchableOpacity className="p-2 -mr-2 rounded-full active:bg-gray-100 dark:active:bg-[#3A3124]">
-                        <MoreHorizontal size={24} color="#9ca3af" />
+                    <Text style={{ fontFamily: 'Outfit_600SemiBold', fontSize: 12, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: 2 }}>
+                        Nouvel Envoi
+                    </Text>
+                    <TouchableOpacity style={{ padding: 8, marginRight: -8, borderRadius: 999 }}>
+                        <MoreHorizontal size={24} color="rgba(255,255,255,0.5)" />
                     </TouchableOpacity>
                 </View>
 
-                <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 16 }} showsVerticalScrollIndicator={false}>
-                    {/* Hero Header */}
-                    <View className="mb-8 items-center">
-                        <View className="items-center justify-center w-12 h-12 rounded-full bg-[#F59E0B]/10 mb-4">
-                            <ShieldCheck size={24} color="#F59E0B" />
+                <ScrollView
+                    contentContainerStyle={{ paddingHorizontal: 28, paddingVertical: 16, flexGrow: 1 }}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Hero Header — sur le gradient */}
+                    <View style={{ marginBottom: 24, alignItems: 'center' }}>
+                        <View style={{
+                            alignItems: 'center', justifyContent: 'center',
+                            width: 56, height: 56, borderRadius: 18,
+                            backgroundColor: 'rgba(245,158,11,0.15)',
+                            marginBottom: 16,
+                            shadowColor: '#F59E0B', shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.25, shadowRadius: 12, elevation: 5,
+                            borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)',
+                        }}>
+                            <ShieldCheck size={28} color="#F59E0B" />
                         </View>
-                        <Text className="text-3xl font-bold text-[#F59E0B] mb-2 text-center">Récapitulatif</Text>
-                        <Text className="text-sm text-gray-500 dark:text-gray-400 max-w-[260px] text-center">
+                        <Text style={{ fontFamily: 'Outfit_900Black', fontSize: 26, color: '#F59E0B', marginBottom: 8, textAlign: 'center', letterSpacing: -0.5 }}>
+                            Récapitulatif
+                        </Text>
+                        <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.5)', maxWidth: 260, textAlign: 'center', lineHeight: 20 }}>
                             Vérifiez le nom du bénéficiaire avant de confirmer l'envoi.
                         </Text>
                     </View>
 
-                    {/* Beneficiary Details Card */}
-                    <View className="bg-gray-50 dark:bg-[#221b10] rounded-2xl border border-gray-100 dark:border-[#3A3124] shadow-sm overflow-hidden mb-6">
-                        {/* Header of the card */}
-                        <View className="px-5 py-4 border-b border-gray-100 dark:border-[#3A3124] flex-row items-center justify-between bg-white dark:bg-[#2A2318]">
-                            <Text className="text-xs font-bold text-gray-400 uppercase tracking-wider">Bénéficiaire</Text>
+                    {/* Beneficiary Details Card — carte blanche sur gradient */}
+                    <View style={{
+                        backgroundColor: '#ffffff', borderRadius: 24,
+                        overflow: 'hidden', marginBottom: 16,
+                        shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+                        shadowOpacity: 0.2, shadowRadius: 24, elevation: 10,
+                    }}>
+                        {/* Card header */}
+                        <View style={{
+                            paddingHorizontal: 20, paddingVertical: 16,
+                            borderBottomWidth: 1, borderBottomColor: '#f3f4f6',
+                            flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                            backgroundColor: '#fafaf8',
+                        }}>
+                            <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                                Bénéficiaire
+                            </Text>
                             <TouchableOpacity onPress={() => router.back()}>
-                                <Text className="text-xs font-semibold text-[#064E3B] dark:text-emerald-400">Modifier</Text>
+                                <Text style={{ fontFamily: 'Outfit_600SemiBold', fontSize: 13, color: '#064E3B' }}>Modifier</Text>
                             </TouchableOpacity>
                         </View>
 
                         {/* Row: Name */}
-                        <View className="flex-row items-center px-5 py-4 bg-white dark:bg-[#221b10]">
-                            <View className="w-10 h-10 rounded-xl bg-[#064E3B]/10 items-center justify-center mr-4">
+                        <View style={{
+                            flexDirection: 'row', alignItems: 'center',
+                            paddingHorizontal: 20, paddingVertical: 18,
+                        }}>
+                            <View style={{
+                                width: 44, height: 44, borderRadius: 16,
+                                backgroundColor: 'rgba(6,78,59,0.08)',
+                                alignItems: 'center', justifyContent: 'center', marginRight: 16,
+                            }}>
                                 <User size={20} color="#064E3B" />
                             </View>
-                            <View className="flex-1">
-                                <Text className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Nom du bénéficiaire</Text>
-                                <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100" numberOfLines={1}>{fullName}</Text>
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
+                                    Nom du bénéficiaire
+                                </Text>
+                                <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 15, color: '#1a1a2e' }} numberOfLines={1}>
+                                    {fullName}
+                                </Text>
                             </View>
                         </View>
 
                         {/* Row: Retrait info */}
-                        <View className="flex-row items-center px-5 py-4 bg-white dark:bg-[#221b10] border-t border-gray-100 dark:border-[#3A3124]">
-                            <View className="w-10 h-10 rounded-xl bg-[#F59E0B]/10 items-center justify-center mr-4">
+                        <View style={{
+                            flexDirection: 'row', alignItems: 'center',
+                            paddingHorizontal: 20, paddingVertical: 18,
+                            borderTopWidth: 1, borderTopColor: '#f3f4f6',
+                        }}>
+                            <View style={{
+                                width: 44, height: 44, borderRadius: 16,
+                                backgroundColor: 'rgba(245,158,11,0.1)',
+                                alignItems: 'center', justifyContent: 'center', marginRight: 16,
+                            }}>
                                 <Link size={20} color="#F59E0B" />
                             </View>
-                            <View className="flex-1">
-                                <Text className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Retrait</Text>
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>
+                                    Retrait
+                                </Text>
                                 {recipient.isNew ? (
                                     <>
-                                        <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">Lien de retrait généré après paiement</Text>
-                                        <Text className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Votre bénéficiaire entrera son IBAN depuis le lien</Text>
+                                        <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 14, color: '#1a1a2e' }}>
+                                            Lien de retrait généré après paiement
+                                        </Text>
+                                        <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
+                                            Votre bénéficiaire entrera son IBAN depuis le lien
+                                        </Text>
                                     </>
                                 ) : (
                                     <>
-                                        <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">Retrait via l'application Wura</Text>
-                                        <Text className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Le bénéficiaire pourra retirer ses fonds depuis son application Wura</Text>
+                                        <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 14, color: '#1a1a2e' }}>
+                                            Retrait via l'application Wura
+                                        </Text>
+                                        <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
+                                            Le bénéficiaire pourra retirer ses fonds depuis son application Wura
+                                        </Text>
                                     </>
                                 )}
                             </View>
@@ -95,27 +161,38 @@ export default function ConfirmationBeneficiaryScreen() {
                     </View>
 
                     {/* Bottom Actions */}
-                    <View className="mt-4 pb-8">
-                        <TouchableOpacity
+                    <View style={{ marginTop: 'auto', paddingTop: 8, paddingBottom: 16 }}>
+                        <AnimatedPressable
                             onPress={handleConfirm}
-                            className="w-full bg-[#064E3B] py-4 rounded-2xl shadow-lg shadow-emerald-900/20 flex-row items-center justify-center gap-2 active:scale-[0.98]"
+                            style={{
+                                width: '100%', backgroundColor: '#064E3B', paddingVertical: 20,
+                                borderRadius: 999, alignItems: 'center', justifyContent: 'center',
+                                shadowColor: '#00F5A0', shadowOffset: { width: 0, height: 8 },
+                                shadowOpacity: 0.35, shadowRadius: 24, elevation: 10,
+                            }}
                         >
-                            <Text className="text-white font-semibold text-base">Confirmer et choisir le montant</Text>
-                            <ArrowRight size={18} color="white" />
-                        </TouchableOpacity>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 18, color: '#ffffff' }}>
+                                    Confirmer et choisir le montant
+                                </Text>
+                                <ArrowRight size={20} color="white" />
+                            </View>
+                        </AnimatedPressable>
 
                         <TouchableOpacity
                             onPress={() => router.back()}
-                            className="w-full mt-4 py-2 items-center"
+                            style={{ width: '100%', marginTop: 12, paddingVertical: 8, alignItems: 'center' }}
                         >
-                            <Text className="text-sm font-medium text-gray-500 dark:text-gray-400">Annuler l'opération</Text>
+                            <Text style={{ fontFamily: 'Outfit_600SemiBold', fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>
+                                Annuler l'opération
+                            </Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
 
-                {/* Bottom Indicator (iOS) */}
-                <View className="items-center pb-2">
-                    <View className="h-1 w-1/3 bg-gray-300 dark:bg-gray-600 rounded-full" />
+                {/* Bottom indicator */}
+                <View style={{ alignItems: 'center', paddingBottom: 8 }}>
+                    <View style={{ height: 4, width: 100, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 2 }} />
                 </View>
             </View>
         </SafeAreaView>

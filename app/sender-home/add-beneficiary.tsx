@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { clsx } from "clsx";
 import { useRouter } from "expo-router";
 import { ArrowRight, ChevronLeft, Globe, Info, Mail, MoreHorizontal, Phone, Shield } from "lucide-react-native";
-import { useColorScheme } from "nativewind";
+
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
@@ -44,7 +44,7 @@ const FloatingLabelInput = ({
     return (
         <View className="relative">
             <View className={clsx(
-                "bg-white dark:bg-white/10 rounded-xl border h-14 flex-row items-center",
+                "bg-white rounded-xl border h-14 flex-row items-center",
                 isFocused ? "border-[#F59E0B] shadow-sm shadow-[#F59E0B]/30" : "border-transparent shadow-sm"
             )}>
                 {icon && (
@@ -55,7 +55,7 @@ const FloatingLabelInput = ({
                 <View className="flex-1 h-full relative">
                     <TextInput
                         className={clsx(
-                            "block w-full h-full bg-transparent border-none pt-5 pb-1 px-4 text-sm font-medium text-gray-900 dark:text-white leading-tight",
+                            "block w-full h-full bg-transparent border-none pt-5 pb-1 px-4 text-sm font-medium text-gray-900 leading-tight",
                             icon && "pl-1",
                             error && "text-red-500"
                         )}
@@ -89,8 +89,7 @@ const FloatingLabelInput = ({
 export default function AddBeneficiaryScreen() {
     const router = useRouter();
     const { setRecipient } = useTransfer();
-    const { colorScheme } = useColorScheme();
-    const isDark = colorScheme === "dark";
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -153,7 +152,7 @@ export default function AddBeneficiaryScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-[#f8f7f5] dark:bg-[#221b10]">
+        <SafeAreaView className="flex-1 bg-[#f8f7f5]">
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 className="flex-1"
@@ -162,43 +161,43 @@ export default function AddBeneficiaryScreen() {
                 <View className="relative px-6 py-4 flex-row items-center justify-between z-20">
                     <TouchableOpacity
                         onPress={() => router.back()}
-                        className="p-2 -ml-2 rounded-full active:bg-black/5 dark:active:bg-white/10"
+                        className="p-2 -ml-2 rounded-full active:bg-black/5"
                     >
-                        <ChevronLeft size={24} color={isDark ? "#ffffff" : "#1f2937"} />
+                        <ChevronLeft size={24} color="#1f2937" />
                     </TouchableOpacity>
 
                     <View className="absolute left-0 right-0 top-0 bottom-0 items-center justify-center pointer-events-none z-[-1]">
                         <Image
-                            source={isDark ? require("../../assets/images/wuraa-removebg-logoVersionDark.png") : require("../../assets/images/wuralogo-removebg-preview.png")}
-                            style={{ width: 400, height: 110 }}
+                            source={require("../../assets/images/wuralogo-removebg-preview.png")}
+                            style={{ width: 320, height: 90 }}
                             resizeMode="contain"
                         />
                     </View>
 
-                    <TouchableOpacity className="p-2 -mr-2 rounded-full active:bg-black/5 dark:active:bg-white/10">
+                    <TouchableOpacity className="p-2 -mr-2 rounded-full active:bg-black/5">
                         <MoreHorizontal size={24} color="#9ca3af" />
                     </TouchableOpacity>
                 </View>
 
                 {/* Subheader */}
-                <View className="px-8 mt-2 mb-6 text-center items-center">
-                    <Text className="text-xl font-semibold text-gray-900 dark:text-white">Nouveau Bénéficiaire</Text>
-                    <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">Saisissez les informations du destinataire</Text>
+                <View className="px-8 mt-1 mb-3 text-center items-center">
+                    <Text className="text-xl font-semibold text-gray-900">Nouveau Bénéficiaire</Text>
+                    <Text className="text-sm text-gray-500 mt-1">Saisissez les informations du destinataire</Text>
                 </View>
 
-                <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
+                <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
                     <View className="gap-4">
 
                         {/* Erreur soumission */}
                         {submitError && (
-                            <View className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded-xl">
-                                <Text className="text-red-600 dark:text-red-400 text-sm">{submitError}</Text>
+                            <View className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
+                                <Text className="text-red-600 text-sm">{submitError}</Text>
                             </View>
                         )}
 
                         {/* Section: Identité */}
                         <View>
-                            <Text className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">
+                            <Text className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
                                 Identité du bénéficiaire
                             </Text>
                             <View className="gap-3">
@@ -254,7 +253,7 @@ export default function AddBeneficiaryScreen() {
 
                         {/* Section: Contact */}
                         <View>
-                            <Text className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">
+                            <Text className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
                                 Coordonnées
                             </Text>
                             <View className="gap-3">
@@ -298,7 +297,7 @@ export default function AddBeneficiaryScreen() {
                         <View>
                             <View className="flex-row items-center gap-2 mb-3">
                                 <Shield size={14} color="#9ca3af" />
-                                <Text className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                                <Text className="text-xs font-semibold uppercase tracking-widest text-gray-400">
                                     Lien avec le bénéficiaire
                                 </Text>
                             </View>
@@ -315,14 +314,14 @@ export default function AddBeneficiaryScreen() {
                                                     "px-4 py-2.5 rounded-xl border",
                                                     selectedLien === opt.value
                                                         ? "bg-[#F59E0B]/15 border-[#F59E0B]"
-                                                        : "bg-white dark:bg-white/10 border-transparent shadow-sm"
+                                                        : "bg-white border-transparent shadow-sm"
                                                 )}
                                             >
                                                 <Text className={clsx(
                                                     "text-sm font-medium",
                                                     selectedLien === opt.value
                                                         ? "text-[#F59E0B]"
-                                                        : "text-gray-600 dark:text-gray-300"
+                                                        : "text-gray-600"
                                                 )}>
                                                     {opt.label}
                                                 </Text>
@@ -336,7 +335,7 @@ export default function AddBeneficiaryScreen() {
                         {/* Info Note */}
                         <View className="flex-row items-start gap-3 px-3 py-3 bg-[#F59E0B]/5 rounded-xl border border-[#F59E0B]/20">
                             <Info size={16} color="#F59E0B" />
-                            <Text className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed flex-1">
+                            <Text className="text-xs text-gray-500 leading-relaxed flex-1">
                                 Un lien de retrait sécurisé sera généré après le paiement. Votre bénéficiaire n'a pas besoin de l'application — il entrera son IBAN directement depuis le lien.
                             </Text>
                         </View>
@@ -345,7 +344,7 @@ export default function AddBeneficiaryScreen() {
                 </ScrollView>
 
                 {/* Sticky Bottom Action */}
-                <View className="absolute bottom-0 left-0 right-0 p-6 bg-[#f8f7f5]/90 dark:bg-[#221b10]/95 pt-6 pb-8 z-50">
+                <View className="absolute bottom-0 left-0 right-0 p-6 bg-[#f8f7f5]/90 pt-4 pb-6 z-50">
                     <TouchableOpacity
                         onPress={handleSubmit(onSubmit)}
                         disabled={isSubmitting}

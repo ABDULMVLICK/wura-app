@@ -3,7 +3,6 @@ import type { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { signInWithPhoneNumber } from "@react-native-firebase/auth";
 import { Link, useRouter } from "expo-router";
 import { ArrowLeft, ArrowRight, Phone, ShieldCheck } from "lucide-react-native";
-import { useColorScheme } from "nativewind";
 import { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View } from "react-native";
@@ -19,8 +18,6 @@ type PhoneFormValues = z.infer<typeof phoneSchema>;
 
 export default function SenderLoginScreen() {
     const router = useRouter();
-    const { colorScheme } = useColorScheme();
-    const isDark = colorScheme === "dark";
     const [step, setStep] = useState<"phone" | "otp">("phone");
     const { control, handleSubmit, formState: { errors }, watch } = useForm<PhoneFormValues>({
         resolver: zodResolver(phoneSchema),
@@ -138,7 +135,7 @@ export default function SenderLoginScreen() {
                         {/* Logo */}
                         <View className="items-center gap-1">
                             <Image
-                                source={isDark ? require("../../assets/images/wuraa-removebg-logoVersionDark.png") : require("../../assets/images/wuralogo-removebg-preview.png")}
+                                source={require("../../assets/images/wuralogo-removebg-preview.png")}
                                 style={{ width: 280, height: 80 }}
                                 resizeMode="contain"
                             />

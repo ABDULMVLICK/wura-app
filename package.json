@@ -14,6 +14,7 @@
     "build:all": "COPYFILE_DISABLE=1 eas build --platform all"
   },
   "dependencies": {
+    "@expo-google-fonts/outfit": "^0.4.3",
     "@expo/vector-icons": "~14.0.4",
     "@hookform/resolvers": "^3.9.1",
     "@kkiapay-org/react-native-sdk": "^0.1.11",
@@ -38,6 +39,7 @@
     "expo-font": "~13.0.1",
     "expo-haptics": "~14.0.0",
     "expo-image": "~2.0.3",
+    "expo-linear-gradient": "~14.0.2",
     "expo-linking": "~7.0.3",
     "expo-notifications": "~0.29.14",
     "expo-router": "~4.0.5",

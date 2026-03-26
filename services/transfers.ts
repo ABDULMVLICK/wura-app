@@ -4,6 +4,7 @@ import { Recipient, TransactionInfo } from '../types/transaction';
 export interface QuoteResult {
     baseAmountCfa: number;
     commercialAmountCfa: number;
+    fixedFeesCfa: number;
     kkiapayFeeCfa: number;
     partnerFeesCfa: number;
     wuraFeesCfa: number;

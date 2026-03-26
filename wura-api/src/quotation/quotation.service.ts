@@ -90,7 +90,7 @@ export class QuotationService {
             return parseFloat((targetEur * 1.03).toFixed(6));
         }
 
-        const url = new URL('https://api-stg.transak.com/api/v2/currencies/price');
+        const url = new URL('https://api.transak.com/api/v2/currencies/price');
         url.searchParams.append('fiatCurrency', 'EUR');
         url.searchParams.append('cryptoCurrency', 'USDT');
         url.searchParams.append('isBuyOrSell', 'SELL');
@@ -147,7 +147,7 @@ export class QuotationService {
             };
         }
 
-        const url = new URL('https://api-stg.transak.com/api/v2/currencies/price');
+        const url = new URL('https://api.transak.com/api/v2/currencies/price');
         url.searchParams.append('fiatCurrency', 'EUR');
         url.searchParams.append('cryptoCurrency', 'USDT');
         url.searchParams.append('isBuyOrSell', 'SELL');

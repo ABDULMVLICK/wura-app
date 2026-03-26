@@ -20,8 +20,6 @@ export default function TransfertReussiScreen() {
 
     const amount = txData?.amountFiatIn ? txData.amountFiatIn : getTotalXOF() || "0";
 
-    // Priorité : vrai nom stocké en DB (receiver.firstName/lastName),
-    // sinon nom du state React, sinon wuraId en fallback
     const recipientHandle = (txData?.receiver?.firstName || txData?.receiver?.lastName)
         ? `${txData.receiver.firstName ?? ''} ${txData.receiver.lastName ?? ''}`.trim()
         : (state.recipient?.prenom || state.recipient?.nom)
@@ -43,13 +41,11 @@ export default function TransfertReussiScreen() {
     useEffect(() => {
         if (!transactionId) return;
 
-        // On est arrivé sur la page avec succès, on tente de récupérer le pays sauvegardé en cache
         getSecureData('pendingKkiapayCountry').then(pays => {
             if (pays) setDestinationCountry(pays);
             deleteSecureData('pendingKkiapayCountry').catch(() => { });
         });
 
-        // Et on peut purger le cache de sauvetage transaction
         deleteSecureData('pendingKkiapayTx').catch(() => { });
 
         let intervalId: ReturnType<typeof setInterval>;
@@ -60,7 +56,6 @@ export default function TransfertReussiScreen() {
                 setStatus(tx.status);
                 setTxData(tx);
 
-                // Si la transaction est dans un état final, on arrête le polling
                 if (tx.status === "COMPLETED" || tx.status === "PAYIN_FAILED" || tx.status === "BRIDGE_FAILED" || tx.status === "OFFRAMP_FAILED") {
                     clearInterval(intervalId);
                 }
@@ -69,9 +64,7 @@ export default function TransfertReussiScreen() {
             }
         };
 
-        // Polling initial
         pollStatus();
-        // Polling toutes les 3 secondes
         intervalId = setInterval(pollStatus, 3000);
 
         return () => clearInterval(intervalId);
@@ -82,8 +75,6 @@ export default function TransfertReussiScreen() {
         router.push("/sender-home");
     };
 
-    // isNewBeneficiary : priorité au flag backend (receiver UID PROV-*),
-    // fallback sur le state React pour les navigations normales.
     const isNewBeneficiary = txData?.isNewBeneficiary === true || state.recipient?.isNew === true;
 
     const claimLink = `https://wura-claim.vercel.app/claim/${reference}`;
@@ -103,183 +94,261 @@ export default function TransfertReussiScreen() {
         }
     };
 
+    const isError = status === "PAYIN_FAILED" || status === "BRIDGE_FAILED" || status === "OFFRAMP_FAILED";
+    const isCompleted = status === "COMPLETED";
+
+    const statusLabel = status === "INITIATED" || status === "PAYIN_PENDING"
+        ? "Attente du paiement mobile..."
+        : status === "PAYIN_SUCCESS" || status === "BRIDGE_PROCESSING"
+            ? `Transfert vers ${destinationCountry} en cours...`
+            : status === "BRIDGE_SUCCESS" || status === "WAITING_USER_OFFRAMP"
+                ? "Transfert en transit"
+                : status === "OFFRAMP_PROCESSING"
+                    ? "Conversion en cours..."
+                    : isCompleted
+                        ? "Transfert réussi !"
+                        : status === "REFUNDED"
+                            ? "Transaction remboursée"
+                            : "Échec du transfert.";
+
     return (
-        <SafeAreaView className="flex-1 bg-[#f8f7f5] dark:bg-[#221b10]">
-            <View className="flex-1 flex flex-col">
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#0A0A0C' }}>
 
-                {/* Confetti (Simulated with static views for now) */}
-                {status === "COMPLETED" && (
-                    <View className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-                        <View className="absolute top-20 right-10 w-2 h-2 rounded-full bg-[#F59E0B]/60" />
-                        <View className="absolute top-28 right-5 w-3 h-1 -rotate-12 bg-yellow-400" />
-                        <View className="absolute top-14 right-20 w-1.5 h-1.5 rounded-sm bg-yellow-600" />
-                        <View className="absolute top-24 left-10 w-2.5 h-2.5 rotate-45 bg-[#F59E0B]/40" />
-                        <View className="absolute top-36 left-6 w-1.5 h-1.5 rounded-full bg-yellow-500" />
-                    </View>
-                )}
+            {/* Confetti subtil si COMPLETED */}
+            {isCompleted && (
+                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', zIndex: 0 }} pointerEvents="none">
+                    <View style={{ position: 'absolute', top: 80, right: 40, width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(245,158,11,0.7)' }} />
+                    <View style={{ position: 'absolute', top: 110, right: 20, width: 10, height: 4, borderRadius: 2, backgroundColor: '#fbbf24', transform: [{ rotate: '-12deg' }] }} />
+                    <View style={{ position: 'absolute', top: 56, right: 80, width: 6, height: 6, borderRadius: 3, backgroundColor: '#fde68a' }} />
+                    <View style={{ position: 'absolute', top: 96, left: 40, width: 10, height: 10, borderRadius: 2, backgroundColor: 'rgba(245,158,11,0.45)', transform: [{ rotate: '45deg' }] }} />
+                    <View style={{ position: 'absolute', top: 144, left: 24, width: 6, height: 6, borderRadius: 3, backgroundColor: '#f59e0b' }} />
+                    <View style={{ position: 'absolute', top: 64, left: 100, width: 4, height: 12, borderRadius: 2, backgroundColor: '#fcd34d', transform: [{ rotate: '20deg' }] }} />
+                </View>
+            )}
 
+            <View style={{ flex: 1, flexDirection: 'column', zIndex: 1 }}>
                 <ScrollView
-                    className="flex-1"
+                    style={{ flex: 1 }}
                     contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
                     showsVerticalScrollIndicator={false}
                 >
-                    <View className="flex-1 flex flex-col items-center pt-8 px-6 relative z-10 pb-6">
+                    <View style={{ flex: 1, alignItems: 'center', paddingTop: 16, paddingHorizontal: 28, paddingBottom: 16 }}>
 
-                        {/* Checkmark Animation Section or Spinner */}
-                        <View className="mt-8 mb-6 relative items-center justify-center">
-                            <View className="absolute w-32 h-32 bg-[#F59E0B]/30 rounded-full opacity-50" />
-                            <View className="relative bg-white dark:bg-[#2A2216] w-32 h-32 rounded-full shadow-lg flex items-center justify-center border border-[#F59E0B]/20 z-10">
-                                {status === "COMPLETED" ? (
-                                    <Check size={48} className="text-[#F59E0B]" color="#F59E0B" strokeWidth={3} />
-                                ) : status === "PAYIN_FAILED" || status === "BRIDGE_FAILED" || status === "OFFRAMP_FAILED" ? (
-                                    <AlertTriangle size={48} color="#EF4444" />
+                        {/* Status Icon — w-24 h-24 */}
+                        <View style={{ marginTop: 8, marginBottom: 16, position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
+                            <View style={{
+                                position: 'absolute', width: 88, height: 88, borderRadius: 44,
+                                backgroundColor: isError ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.15)',
+                            }} />
+                            <View style={{
+                                width: 80, height: 80, borderRadius: 40,
+                                backgroundColor: 'rgba(15,61,46,0.8)',
+                                alignItems: 'center', justifyContent: 'center',
+                                borderWidth: 1.5, borderColor: isError ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)',
+                                shadowColor: isError ? '#ef4444' : '#F59E0B',
+                                shadowOffset: { width: 0, height: 6 },
+                                shadowOpacity: 0.3, shadowRadius: 16, elevation: 8,
+                                zIndex: 1,
+                            }}>
+                                {isCompleted ? (
+                                    <Check size={34} color="#F59E0B" strokeWidth={3} />
+                                ) : isError ? (
+                                    <AlertTriangle size={34} color="#EF4444" />
                                 ) : (
                                     <ActivityIndicator size="large" color="#F59E0B" />
                                 )}
                             </View>
                         </View>
 
-                        {/* Dynamic Status Text */}
-                        <View className="text-center w-full items-center space-y-4">
-                            <Text className="text-[24px] font-bold text-gray-900 dark:text-white tracking-tight leading-tight text-center mb-4">
-                                {status === "INITIATED" || status === "PAYIN_PENDING" ? "Attente du paiement mobile..."
-                                    : status === "PAYIN_SUCCESS" || status === "BRIDGE_PROCESSING" ? `Transfert vers ${destinationCountry} en cours...`
-                                        : status === "BRIDGE_SUCCESS" || status === "WAITING_USER_OFFRAMP" ? "Transfert en transit"
-                                            : status === "OFFRAMP_PROCESSING" ? "Conversion en cours..."
-                                                : status === "COMPLETED" ? "Transfert réussi !"
-                                                    : status === "REFUNDED" ? "Transaction remboursée"
-                                                        : "Échec du transfert."
-                                }
+                        {/* Status Title — text-[22px] mb-3 */}
+                        <Text style={{
+                            fontFamily: 'Outfit_900Black', fontSize: 22, color: '#ffffff',
+                            textAlign: 'center', letterSpacing: -0.5, lineHeight: 28, marginBottom: 12,
+                        }}>
+                            {statusLabel}
+                        </Text>
+
+                        {/* Amount card — text-2xl p-4 */}
+                        <View style={{
+                            backgroundColor: 'rgba(255,255,255,0.06)',
+                            borderRadius: 20, padding: 16,
+                            borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+                            marginHorizontal: 4, width: '100%',
+                        }}>
+                            <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 14, color: 'rgba(255,255,255,0.55)', textAlign: 'center', lineHeight: 20 }}>
+                                {isCompleted ? "Vous avez envoyé" : status === "REFUNDED" ? "Remboursé" : "Envoi de"}
                             </Text>
-
-                            <View className="bg-[#FDFBF7] dark:bg-[#2A2216] rounded-2xl p-4 border border-gray-100 dark:border-gray-800/50 shadow-sm mx-2 w-full">
-                                <Text className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed font-medium text-center">
-                                    {status === "COMPLETED" ? "Vous avez envoyé" : status === "REFUNDED" ? "Remboursé" : "Envoi de"} {"\n"}
-                                    <Text className="text-3xl font-extrabold text-[#F59E0B] dark:text-[#F59E0B] tracking-tight block mt-1 mb-1">
-                                        {formattedAmount} FCFA
-                                    </Text>{"\n"}
-                                    à <Text className="font-bold text-gray-900 dark:text-white">{recipientHandle}</Text>
-                                </Text>
-                            </View>
-
-                            {/* Transit info message */}
-                            {(status === "BRIDGE_SUCCESS" || status === "WAITING_USER_OFFRAMP") && (
-                                <View className="w-full mt-3 bg-blue-50 dark:bg-blue-900/15 rounded-xl p-4 border border-blue-200 dark:border-blue-800/30">
-                                    <Text className="text-blue-700 dark:text-blue-300 text-sm font-medium text-center leading-5">
-                                        Les fonds sont arrivés. Le bénéficiaire les retirera vers son compte bancaire depuis son application Wura.
-                                    </Text>
-                                </View>
-                            )}
-
-                            {/* Failure Action Buttons */}
-                            {(status === "PAYIN_FAILED" || status === "BRIDGE_FAILED" || status === "OFFRAMP_FAILED") && (
-                                <View className="w-full mt-4 gap-3">
-                                    <TouchableOpacity
-                                        onPress={async () => {
-                                            try {
-                                                Alert.alert("Remboursement", "Envoi de la demande en cours...");
-                                                await TransferService.requestRefund(transactionId);
-                                                setStatus("REFUNDED");
-                                                Alert.alert("✅ Remboursé", "Votre remboursement a été traité avec succès. L'argent sera recrédité sur votre compte mobile.");
-                                            } catch (error: any) {
-                                                Alert.alert("Erreur", error.response?.data?.message || "Impossible de traiter le remboursement.");
-                                            }
-                                        }}
-                                        className="w-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 py-3.5 rounded-xl flex-row items-center justify-center gap-2 active:scale-[0.98]"
-                                    >
-                                        <AlertTriangle size={18} color="#EF4444" />
-                                        <Text className="text-red-600 dark:text-red-400 font-bold text-base">Demander un remboursement</Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            resetTransfer();
-                                            router.replace("/sender-home");
-                                        }}
-                                        className="w-full bg-[#064E3B] py-3.5 rounded-xl flex-row items-center justify-center gap-2 active:scale-[0.98] shadow-lg shadow-emerald-900/10"
-                                    >
-                                        <RefreshCw size={18} color="white" />
-                                        <Text className="text-white font-bold text-base">Réessayer le transfert</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            )}
+                            <Text style={{
+                                fontFamily: 'Outfit_900Black', fontSize: 26, color: '#F59E0B',
+                                textAlign: 'center', letterSpacing: -1, marginVertical: 6,
+                            }}>
+                                {formattedAmount} FCFA
+                            </Text>
+                            <Text style={{ fontFamily: 'Outfit_600SemiBold', fontSize: 14, color: 'rgba(255,255,255,0.65)', textAlign: 'center' }}>
+                                à <Text style={{ fontFamily: 'Outfit_700Bold', color: '#ffffff' }}>{recipientHandle}</Text>
+                            </Text>
                         </View>
 
-                        {/* Share Shareable Link Section (Primary Action) */}
-                        {/* Affiché dès que le referenceId est connu (1er poll), quel que soit le statut */}
-                        {isNewBeneficiary && txData?.referenceId && !["PAYIN_FAILED", "BRIDGE_FAILED", "OFFRAMP_FAILED", "REFUNDED"].includes(status) && (
-                            <View className="w-full mt-6 bg-[#FDFBF7] dark:bg-[#2A2216] rounded-2xl p-5 border border-[#F59E0B]/30 shadow-sm relative overflow-hidden">
-                                <View className="absolute top-0 right-0 w-32 h-32 bg-[#F59E0B]/5 rounded-bl-full" />
+                        {/* Transit info */}
+                        {(status === "BRIDGE_SUCCESS" || status === "WAITING_USER_OFFRAMP") && (
+                            <View style={{
+                                width: '100%', marginTop: 12,
+                                backgroundColor: 'rgba(59,130,246,0.12)',
+                                borderRadius: 16, padding: 16,
+                                borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)',
+                            }}>
+                                <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 14, color: 'rgba(147,197,253,0.9)', textAlign: 'center', lineHeight: 20 }}>
+                                    Les fonds sont arrivés. Le bénéficiaire les retirera vers son compte bancaire depuis son application Wura.
+                                </Text>
+                            </View>
+                        )}
 
-                                <Text className="text-gray-900 dark:text-white font-bold text-lg mb-1">
+                        {/* Error Actions */}
+                        {isError && (
+                            <View style={{ width: '100%', marginTop: 16, gap: 12 }}>
+                                <TouchableOpacity
+                                    onPress={async () => {
+                                        try {
+                                            Alert.alert("Remboursement", "Envoi de la demande en cours...");
+                                            await TransferService.requestRefund(transactionId);
+                                            setStatus("REFUNDED");
+                                            Alert.alert("✅ Remboursé", "Votre remboursement a été traité avec succès. L'argent sera recrédité sur votre compte mobile.");
+                                        } catch (error: any) {
+                                            Alert.alert("Erreur", error.response?.data?.message || "Impossible de traiter le remboursement.");
+                                        }
+                                    }}
+                                    style={{
+                                        width: '100%', backgroundColor: 'rgba(239,68,68,0.12)',
+                                        borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)',
+                                        paddingVertical: 16, borderRadius: 24,
+                                        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                    }}
+                                    activeOpacity={0.8}
+                                >
+                                    <AlertTriangle size={18} color="#ef4444" />
+                                    <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 15, color: '#ef4444' }}>Demander un remboursement</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    onPress={() => { resetTransfer(); router.replace("/sender-home"); }}
+                                    style={{
+                                        width: '100%', backgroundColor: '#064E3B', paddingVertical: 16,
+                                        borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                        shadowColor: '#064E3B', shadowOffset: { width: 0, height: 6 },
+                                        shadowOpacity: 0.3, shadowRadius: 16, elevation: 6,
+                                    }}
+                                    activeOpacity={0.8}
+                                >
+                                    <RefreshCw size={18} color="white" />
+                                    <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 15, color: '#ffffff' }}>Réessayer le transfert</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        {/* Claim Link Section — mt-4 p-5 */}
+                        {isNewBeneficiary && txData?.referenceId && !["PAYIN_FAILED", "BRIDGE_FAILED", "OFFRAMP_FAILED", "REFUNDED"].includes(status) && (
+                            <View style={{
+                                width: '100%', marginTop: 14,
+                                backgroundColor: 'rgba(255,255,255,0.05)',
+                                borderRadius: 20, padding: 20,
+                                borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)',
+                                overflow: 'hidden', position: 'relative',
+                            }}>
+                                <View style={{
+                                    position: 'absolute', top: 0, right: 0,
+                                    width: 120, height: 120,
+                                    backgroundColor: 'rgba(245,158,11,0.06)',
+                                    borderBottomLeftRadius: 120,
+                                }} />
+
+                                <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 17, color: '#ffffff', marginBottom: 6 }}>
                                     Partagez le lien de retrait ! 🔗
                                 </Text>
-                                <Text className="text-gray-500 dark:text-gray-400 text-sm mb-4 leading-relaxed">
+                                <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 16, lineHeight: 18 }}>
                                     Envoyez ce lien unique au bénéficiaire. Il pourra récupérer les fonds directement sur son IBAN en un clic.
                                 </Text>
 
-                                <View className="flex-row items-center bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl p-3 mb-4">
-                                    <Text className="flex-1 text-gray-700 dark:text-gray-300 font-mono text-xs" numberOfLines={1} ellipsizeMode="tail">
+                                <View style={{
+                                    flexDirection: 'row', alignItems: 'center',
+                                    backgroundColor: 'rgba(0,0,0,0.25)',
+                                    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+                                    borderRadius: 16, padding: 12, marginBottom: 16,
+                                }}>
+                                    <Text style={{ flex: 1, fontFamily: 'Outfit_400Regular', fontSize: 12, color: 'rgba(255,255,255,0.6)' }} numberOfLines={1} ellipsizeMode="tail">
                                         {claimLink}
                                     </Text>
-                                    <TouchableOpacity onPress={handleCopyLink} className="p-2 ml-2 bg-gray-100 dark:bg-white/10 rounded-lg">
-                                        <Copy size={16} className="text-gray-600 dark:text-gray-300" />
+                                    <TouchableOpacity onPress={handleCopyLink} style={{
+                                        padding: 8, marginLeft: 8,
+                                        backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 10,
+                                    }}>
+                                        <Copy size={16} color="rgba(255,255,255,0.7)" />
                                     </TouchableOpacity>
                                 </View>
 
                                 <TouchableOpacity
                                     onPress={handleShareLink}
-                                    className="w-full bg-[#128C7E] py-3.5 rounded-xl shadow-lg shadow-[#128C7E]/20 flex-row items-center justify-center gap-2 active:scale-[0.98]"
+                                    style={{
+                                        width: '100%', backgroundColor: '#128C7E', paddingVertical: 16,
+                                        borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                        shadowColor: '#128C7E', shadowOffset: { width: 0, height: 6 },
+                                        shadowOpacity: 0.35, shadowRadius: 16, elevation: 6,
+                                    }}
+                                    activeOpacity={0.85}
                                 >
                                     <Share2 size={18} color="white" />
-                                    <Text className="text-white font-bold text-base">Partager sur WhatsApp</Text>
+                                    <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 16, color: '#ffffff' }}>Partager sur WhatsApp</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
 
-                        {/* Details Card */}
-                        <View className="w-full mt-6 bg-white dark:bg-[#2A2216] rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm">
-                            <View className="gap-5">
+                        {/* Details Card — glass mt-4 p-5 gap-4 */}
+                        <View style={{
+                            width: '100%', marginTop: 14,
+                            backgroundColor: 'rgba(255,255,255,0.05)',
+                            borderRadius: 20, padding: 20,
+                            borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+                        }}>
+                            <View style={{ gap: 14 }}>
                                 {/* Reference */}
-                                <View className="flex-row justify-between items-center">
-                                    <Text className="text-sm font-medium text-gray-500 dark:text-gray-400">Référence</Text>
-                                    <View className="flex-row items-center gap-2 bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded-md">
-                                        <Text className="text-sm font-bold text-gray-800 dark:text-gray-200 font-mono tracking-wide">{reference}</Text>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Référence</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
+                                        <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 13, color: '#ffffff' }}>{reference}</Text>
                                         <TouchableOpacity onPress={async () => {
                                             await Clipboard.setStringAsync(reference);
                                             Alert.alert("Copié !", "Référence copiée dans le presse-papiers.");
                                         }}>
-                                            <Copy size={14} className="text-gray-400" color="#9ca3af" />
+                                            <Copy size={14} color="rgba(255,255,255,0.45)" />
                                         </TouchableOpacity>
                                     </View>
                                 </View>
 
-                                <View className="border-b border-dashed border-gray-200 dark:border-gray-700 h-[1px]" />
+                                <View style={{ borderBottomWidth: 1, borderStyle: 'dashed', borderBottomColor: 'rgba(255,255,255,0.1)' }} />
 
                                 {/* Date */}
-                                <View className="flex-row justify-between items-center">
-                                    <Text className="text-sm font-medium text-gray-500 dark:text-gray-400">Date</Text>
-                                    <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Date</Text>
+                                    <Text style={{ fontFamily: 'Outfit_600SemiBold', fontSize: 13, color: 'rgba(255,255,255,0.85)' }}>
                                         {txData?.createdAt
                                             ? new Date(txData.createdAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
                                             : new Date().toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                     </Text>
                                 </View>
 
-                                <View className="border-b border-dashed border-gray-200 dark:border-gray-700 h-[1px]" />
+                                <View style={{ borderBottomWidth: 1, borderStyle: 'dashed', borderBottomColor: 'rgba(255,255,255,0.1)' }} />
 
                                 {/* Source */}
-                                <View className="flex-row justify-between items-center">
-                                    <Text className="text-sm font-medium text-gray-500 dark:text-gray-400">Source</Text>
-                                    <View className="flex-row items-center gap-2">
-                                        <View className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                                        <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">Portefeuille Principal</Text>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Source</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' }} />
+                                        <Text style={{ fontFamily: 'Outfit_600SemiBold', fontSize: 13, color: 'rgba(255,255,255,0.85)' }}>Portefeuille Principal</Text>
                                     </View>
                                 </View>
                             </View>
                         </View>
 
-                        {/* Download Receipt */}
+                        {/* Download receipt */}
                         <TouchableOpacity
                             onPress={async () => {
                                 try {
@@ -291,24 +360,32 @@ export default function TransfertReussiScreen() {
                                     console.error("Erreur partage reçu:", error.message);
                                 }
                             }}
-                            className="mt-6 flex-row items-center justify-center gap-2 px-4 py-2 rounded-lg active:bg-[#F59E0B]/5"
+                            style={{ marginTop: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 }}
+                            activeOpacity={0.7}
                         >
-                            <Download size={20} className="text-[#F59E0B]" color="#F59E0B" />
-                            <Text className="text-[#F59E0B] font-semibold text-sm">Télécharger le reçu (PDF)</Text>
+                            <Download size={20} color="#F59E0B" />
+                            <Text style={{ fontFamily: 'Outfit_600SemiBold', fontSize: 14, color: '#F59E0B' }}>Télécharger le reçu (PDF)</Text>
                         </TouchableOpacity>
 
-                        {/* Compact Footer Action */}
+                        {/* Return home — mt-6 */}
                         <TouchableOpacity
                             onPress={handleReturnHome}
-                            className="mt-10 px-6 py-3 rounded-full border border-gray-200 dark:border-gray-800 flex-row items-center justify-center gap-2 active:bg-gray-50 dark:active:bg-white/5"
+                            style={{
+                                marginTop: 24, paddingHorizontal: 24, paddingVertical: 12,
+                                borderRadius: 999,
+                                borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+                                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                            }}
+                            activeOpacity={0.7}
                         >
-                            <ChevronLeft size={16} className="text-gray-600 dark:text-gray-400" color="#4b5563" />
-                            <Text className="text-gray-700 dark:text-gray-300 font-medium text-sm">Retour à l'accueil</Text>
+                            <ChevronLeft size={16} color="rgba(255,255,255,0.55)" />
+                            <Text style={{ fontFamily: 'Outfit_600SemiBold', fontSize: 14, color: 'rgba(255,255,255,0.55)' }}>
+                                Retour à l'accueil
+                            </Text>
                         </TouchableOpacity>
 
                     </View>
                 </ScrollView>
-
             </View>
         </SafeAreaView>
     );

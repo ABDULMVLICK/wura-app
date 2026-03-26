@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { SenderGradient } from "../../components/SenderGradient";
 import { useTransfer } from "../../contexts/TransferContext";
 import { AuthService } from "../../services/auth";
 
@@ -51,96 +52,122 @@ export default function RecipientSearchScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-[#F8F8F5] dark:bg-[#23220f]">
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#14533d' }}>
+            {/* Gradient animé — identité sender */}
+            <SenderGradient heightRatio={0.42} />
+
             {/* Header */}
-            <View className="pt-4 px-6 pb-4 flex-row items-center justify-between z-10 bg-[#F8F8F5]/95 dark:bg-[#23220f]/95">
+            <View style={{
+                paddingTop: 16, paddingHorizontal: 28, paddingBottom: 12,
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                zIndex: 1,
+            }}>
                 <TouchableOpacity
                     onPress={() => router.back()}
-                    className="p-2 -ml-2 rounded-full active:bg-gray-200 dark:active:bg-white/10"
+                    style={{
+                        padding: 8, marginLeft: -8, borderRadius: 999,
+                        backgroundColor: 'rgba(255,255,255,0.1)',
+                    }}
                 >
-                    <ChevronLeft size={24} className="text-gray-800 dark:text-gray-100" color="#1f2937" />
+                    <ChevronLeft size={24} color="#ffffff" />
                 </TouchableOpacity>
-                <Text className="text-lg font-semibold tracking-wide text-gray-900 dark:text-gray-100">
+                <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 20, color: '#ffffff' }}>
                     Envoyer de l'argent
                 </Text>
                 <View style={{ width: 40 }} />
             </View>
 
-            <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
-                {/* Search Section */}
-                <View className="mt-2 mb-8 relative">
-                    <View className="relative">
-                        <View className="absolute inset-y-0 left-0 pl-4 flex items-center justify-center z-10 h-full">
-                            <Search size={24} className="text-yellow-600 dark:text-[#f9f506]" color="#d97706" />
-                        </View>
+            <ScrollView
+                contentContainerStyle={{ paddingHorizontal: 28, paddingBottom: 100 }}
+                showsVerticalScrollIndicator={false}
+                style={{ zIndex: 1 }}
+            >
+                {/* Search Bar */}
+                <View style={{ marginTop: 4, marginBottom: 20 }}>
+                    <View style={{
+                        backgroundColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.15)',
+                        borderRadius: 18, flexDirection: 'row', alignItems: 'center',
+                        paddingHorizontal: 16, paddingVertical: 4,
+                    }}>
+                        <Search size={22} color="#F59E0B" style={{ marginRight: 8 }} />
                         <TextInput
                             autoFocus={true}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                             autoCapitalize="none"
-                            className="block w-full pl-12 pr-12 py-4 bg-white dark:bg-[#2d2c1b] border-2 border-transparent focus:border-[#f9f506] rounded-xl text-lg text-gray-900 dark:text-gray-100 placeholder:text-gray-400 shadow-sm"
+                            style={{
+                                flex: 1, paddingVertical: 14, fontSize: 17,
+                                fontFamily: 'Outfit_400Regular', color: '#ffffff',
+                            }}
                             placeholder="Wura ID ou Téléphone"
-                            placeholderTextColor="#9ca3af"
+                            placeholderTextColor="rgba(255,255,255,0.35)"
                         />
                         {isSearching ? (
-                            <View className="absolute inset-y-0 right-0 pr-4 flex items-center justify-center h-full">
-                                <ActivityIndicator size="small" color="#d97706" />
-                            </View>
+                            <ActivityIndicator size="small" color="#F59E0B" />
                         ) : searchQuery.length > 0 ? (
-                            <TouchableOpacity
-                                onPress={() => setSearchQuery("")}
-                                className="absolute inset-y-0 right-0 pr-4 flex items-center justify-center h-full"
-                            >
-                                <Text className="text-gray-400 font-bold text-lg">✕</Text>
+                            <TouchableOpacity onPress={() => setSearchQuery("")}>
+                                <Text style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'Outfit_700Bold', fontSize: 16 }}>✕</Text>
                             </TouchableOpacity>
                         ) : (
-                            <View className="absolute inset-y-0 right-0 pr-4 flex items-center justify-center h-full">
-                                <View className="h-2 w-2 rounded-full bg-[#f9f506]" />
-                            </View>
+                            <View style={{ height: 8, width: 8, borderRadius: 4, backgroundColor: '#F59E0B' }} />
                         )}
                     </View>
                 </View>
 
-                {/* New Recipient Action */}
+                {/* New Recipient Button */}
                 <TouchableOpacity
                     onPress={() => router.push("/sender-home/add-beneficiary")}
-                    className="w-full mb-8 flex-row items-center p-4 bg-white dark:bg-[#2d2c1b] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 active:scale-[0.98]"
+                    style={{
+                        width: '100%', marginBottom: 20,
+                        flexDirection: 'row', alignItems: 'center', padding: 16,
+                        backgroundColor: 'rgba(255,255,255,0.08)',
+                        borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+                    }}
+                    activeOpacity={0.8}
                 >
-                    <View className="h-12 w-12 rounded-full bg-[#f9f506] flex items-center justify-center shadow-sm">
-                        <Plus size={24} color="black" />
+                    <View style={{
+                        height: 48, width: 48, borderRadius: 24,
+                        backgroundColor: '#F59E0B', alignItems: 'center', justifyContent: 'center',
+                        shadowColor: '#F59E0B', shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.35, shadowRadius: 10, elevation: 5,
+                    }}>
+                        <Plus size={24} color="#0f3d2e" />
                     </View>
-                    <View className="ml-4 flex-1">
-                        <Text className="font-bold text-gray-900 dark:text-white">Nouveau bénéficiaire</Text>
-                        <Text className="text-sm text-gray-500 dark:text-gray-400">Ajouter via ID ou téléphone</Text>
+                    <View style={{ marginLeft: 16, flex: 1 }}>
+                        <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 15, color: '#ffffff' }}>Nouveau bénéficiaire</Text>
+                        <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>Ajouter via ID ou téléphone</Text>
                     </View>
-                    <ChevronRight size={24} className="text-gray-400" color="#9ca3af" />
+                    <ChevronRight size={22} color="rgba(255,255,255,0.4)" />
                 </TouchableOpacity>
 
-                {/* Suggested / Results Header */}
-                <View className="mb-4 flex-row items-center justify-between">
-                    <Text className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        {searchQuery.length >= 3 ? "Résultats de la recherche" : "Suggérés"}
+                {/* Results header */}
+                <View style={{ marginBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text style={{ fontFamily: 'Outfit_600SemiBold', fontSize: 12, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                        {searchQuery.length >= 3 ? "Résultats" : "Suggérés"}
                     </Text>
                     {!searchQuery && (
                         <TouchableOpacity onPress={() => router.push("/historique")}>
-                            <Text className="text-sm font-medium text-yellow-600 dark:text-[#f9f506]">Voir tout</Text>
+                            <Text style={{ fontFamily: 'Outfit_600SemiBold', fontSize: 13, color: '#F59E0B' }}>Voir tout</Text>
                         </TouchableOpacity>
                     )}
                 </View>
 
-                {/* List of Recipients */}
-                <View className="space-y-3 gap-3">
+                {/* Results List */}
+                <View style={{ gap: 12 }}>
                     {searchQuery.length < 3 && (
-                        <View className="py-8 items-center">
-                            <Text className="text-gray-400 dark:text-gray-500 text-center text-sm">
+                        <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                            <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 14, color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>
                                 Tapez au moins 3 caractères{'\n'}pour rechercher un bénéficiaire
                             </Text>
                         </View>
                     )}
 
                     {searchQuery.length >= 3 && searchResults.length === 0 && !isSearching && (
-                        <View className="py-6 items-center">
-                            <Text className="text-gray-500 text-center">Aucun utilisateur trouvé pour @{searchQuery.trim()}</Text>
+                        <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+                            <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center' }}>
+                                Aucun utilisateur trouvé pour @{searchQuery.trim()}
+                            </Text>
                         </View>
                     )}
 
@@ -148,33 +175,45 @@ export default function RecipientSearchScreen() {
                         <TouchableOpacity
                             key={recipient.id}
                             onPress={() => handleSelectRecipient(recipient)}
-                            className="bg-white dark:bg-[#2d2c1b] rounded-xl p-4 flex-row items-center shadow-sm border border-transparent active:border-[#f9f506]/30"
+                            style={{
+                                backgroundColor: 'rgba(255,255,255,0.08)',
+                                borderRadius: 20, padding: 20,
+                                flexDirection: 'row', alignItems: 'center',
+                                borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+                            }}
+                            activeOpacity={0.8}
                         >
-                            <View className="h-12 w-12 rounded-full items-center justify-center border-2 border-white dark:border-gray-800 bg-yellow-100 dark:bg-yellow-900/30">
-                                <Text className="font-bold text-lg text-yellow-600 dark:text-yellow-400">
+                            <View style={{
+                                height: 48, width: 48, borderRadius: 24,
+                                alignItems: 'center', justifyContent: 'center',
+                                backgroundColor: 'rgba(245,158,11,0.15)',
+                                borderWidth: 2, borderColor: 'rgba(245,158,11,0.3)',
+                            }}>
+                                <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 16, color: '#F59E0B' }}>
                                     {recipient.wuraId ? recipient.wuraId.substring(0, 2).toUpperCase() : "WU"}
                                 </Text>
                             </View>
 
-                            <View className="ml-4 flex-1">
-                                <Text className="font-bold text-gray-900 dark:text-white">
+                            <View style={{ marginLeft: 16, flex: 1 }}>
+                                <Text style={{ fontFamily: 'Outfit_700Bold', fontSize: 15, color: '#ffffff' }}>
                                     {recipient.email ? recipient.email.split('@')[0] : "Utilisateur Wura"}
                                 </Text>
-                                <Text className="text-sm text-gray-500 dark:text-gray-400">
+                                <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
                                     @{recipient.wuraId}
                                 </Text>
                             </View>
 
-                            <View className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 dark:bg-white/5">
-                                <ChevronRight size={16} className="text-gray-400" color="#9ca3af" />
+                            <View style={{
+                                height: 32, width: 32, borderRadius: 16,
+                                alignItems: 'center', justifyContent: 'center',
+                                backgroundColor: 'rgba(255,255,255,0.08)',
+                            }}>
+                                <ChevronRight size={16} color="rgba(255,255,255,0.4)" />
                             </View>
                         </TouchableOpacity>
                     ))}
                 </View>
             </ScrollView>
-
-            {/* Footer Gradient Override (Simulated with View since LinearGradient needs install) */}
-            {/* Not strictly necessary in RN structure if styling matches, simpler to leave out or use standard bottom layout */}
         </SafeAreaView>
     );
 }
