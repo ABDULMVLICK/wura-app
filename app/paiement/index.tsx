@@ -158,7 +158,7 @@ export default function PaiementScreen() {
             openKkiapayWidget({
                 amount: amount,
                 key: KKIAPAY_PUBLIC_KEY,
-                sandbox: true,
+                sandbox: false,
                 reason: "Envoi Wura vers " + state.recipient.prenom,
                 data: tx.referenceId
             });
