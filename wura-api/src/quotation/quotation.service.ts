@@ -48,6 +48,10 @@ export class QuotationService {
     // Plafond KYC par transaction
     private readonly MAX_AMOUNT_CFA = 300_000;
 
+    // ⚠️ MODE BETA — frais Wura à 0 pour la phase de test
+    // Mettre à false pour réactiver la tarification normale après les beta-testeurs
+    private readonly BETA_MODE = true;
+
     constructor(private readonly configService: ConfigService) { }
 
     // -----------------------------------------------------------------------
@@ -59,6 +63,10 @@ export class QuotationService {
     private getTierConfig(baseAmountCfa: number, speed: DeliverySpeed): { taux: number; fixedFeesCfa: number } {
         if (baseAmountCfa > this.MAX_AMOUNT_CFA) {
             throw new BadRequestException('Montant maximum autorisé : 300 000 FCFA (limite de conformité KYC).');
+        }
+        // ⚠️ Beta : taux officiel, zéro frais fixes — Wura absorbe tout
+        if (this.BETA_MODE) {
+            return { taux: this.TAUX_OFFICIEL, fixedFeesCfa: 0 };
         }
         if (speed === DeliverySpeed.INSTANT) {
             if (baseAmountCfa < 30_000) return { taux: 721, fixedFeesCfa: 2_500 };
