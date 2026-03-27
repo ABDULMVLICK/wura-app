@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "107069302242-vjbefsq4g6sg0emk29lut540g8n5rha5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wura.app",
+            "certificate_hash": "a41986968f81da18ec7795a8247fc3a2e791060b"
+          }
+        },
+        {
           "client_id": "107069302242-7gfurhktqt5etgs5u0241qsrbvcmcvce.apps.googleusercontent.com",
           "client_type": 3
         }
